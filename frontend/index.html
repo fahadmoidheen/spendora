@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b3d2e" />
+    <title>Spendora</title>
+    <!-- Fonts from the design: Space Grotesk for headings and amounts,
+         Inter for everything else. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+    />
+    <script>
+      // Pick light or dark before the page draws, so there's no flash.
+      // A choice made with the header toggle (saved by src/theme.js) wins;
+      // until then the OS setting is followed, live. Bootstrap and our CSS
+      // read data-bs-theme.
+      ;(() => {
+        const osDark = window.matchMedia('(prefers-color-scheme: dark)')
+        const saved = () => {
+          try {
+            return localStorage.getItem('spendora:theme')
+          } catch {
+            return null
+          }
+        }
+        const apply = () => {
+          const choice = saved()
+          const theme =
+            choice === 'light' || choice === 'dark'
+              ? choice
+              : osDark.matches
+                ? 'dark'
+                : 'light'
+          document.documentElement.setAttribute('data-bs-theme', theme)
+        }
+        apply()
+        osDark.addEventListener('change', apply)
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

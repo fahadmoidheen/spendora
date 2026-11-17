@@ -1,0 +1,1614 @@
+/* Spendora design system, from the Claude Design canvas ("UI kit" and
+   "Dashboard" boards). Bootstrap 5.3 still supplies the reset and a few
+   utilities; everything you see is styled here.
+
+   1. Tokens (light, then dark)   6. Stat cards
+   2. Base and layout             7. Expense list and breakdown
+   3. Panels and notices          8. Empty states
+   4. Buttons                     9. Income, budgets, currency
+   5. Inputs, chips, date picker 10. Dropdowns                         */
+
+/* 1. Tokens ------------------------------------------------------------ */
+
+:root,
+[data-bs-theme='light'] {
+  --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+
+  /* Brand */
+  --forest: #0b3d2e;
+  --forest-hover: #0f4d3a;
+  --forest-press: #06251c;
+  --lime: #c6f36b;
+  --lime-hover: #b5e654;
+  --lime-press: #a3d63f;
+
+  /* Surfaces and text */
+  --page: #f3f5ef;
+  --surface: #ffffff;
+  --surface-hover: #f7f9f5;
+  --subtle: #e7ece4;
+  --subtle-strong: #c9d1c9;
+  --border: #c9d1c9;
+  --hairline: #e7ece4;
+  --ink: #0b1f17;
+  --muted: #3f5249;
+  --disabled: #6b7a72;
+  --icon: #0b3d2e;
+  --income: #1f7a4d;
+
+  /* Roles */
+  --primary: var(--forest);
+  --primary-hover: var(--forest-hover);
+  --primary-press: var(--forest-press);
+  --on-primary: #ffffff;
+  --on-accent: var(--forest);
+  --danger: #b42318;
+  --danger-hover: #9a1b12;
+  --danger-press: #7f150d;
+  --on-danger: #ffffff;
+  --danger-soft: rgba(180, 35, 24, 0.08);
+
+  /* Focus: inputs glow lime; buttons get the kit's three-ring outline. */
+  --focus-glow: rgba(198, 243, 107, 0.6);
+  --focus-ring: 0 0 0 3px var(--surface), 0 0 0 6px var(--lime), 0 0 0 7px var(--forest);
+  --focus-ring-tight: 0 0 0 2px var(--lime), 0 0 0 3px var(--forest);
+  --shadow-pop: 0 18px 40px rgba(11, 31, 23, 0.16), 0 2px 6px rgba(11, 31, 23, 0.08);
+  --chevron: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3cpath d='M6 9l6 6 6-6' fill='none' stroke='%233F5249' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+
+  /* Bootstrap's own variables, so anything it still draws matches. */
+  --bs-body-font-family: var(--font-body);
+  --bs-body-color: var(--ink);
+  --bs-body-bg: var(--page);
+  --bs-emphasis-color: var(--ink);
+  --bs-secondary-color: var(--muted);
+  --bs-border-color: var(--border);
+  --bs-primary: #0b3d2e;
+  --bs-primary-rgb: 11, 61, 46;
+  --bs-link-color: #0b3d2e;
+  --bs-link-color-rgb: 11, 61, 46;
+  --bs-link-hover-color: #06251c;
+  --bs-link-hover-color-rgb: 6, 37, 28;
+}
+
+/* The design is light-only. Dark mode keeps its structure: forest-tinted
+   surfaces, and lime takes over as the primary colour because forest is
+   too dark to read on a dark page. */
+[data-bs-theme='dark'] {
+  --page: #0b1410;
+  --surface: #121e19;
+  --surface-hover: #172620;
+  --subtle: #1c2c25;
+  --subtle-strong: #2b3f36;
+  --border: #2e4239;
+  --hairline: #1f3029;
+  --ink: #e6eee8;
+  --muted: #9fb2a8;
+  --disabled: #7d8c84;
+  --icon: #c6f36b;
+  --income: #7fd99f;
+
+  --primary: var(--lime);
+  --primary-hover: #d4f78a;
+  --primary-press: #b3e04f;
+  --on-primary: #0b1f17;
+  --on-accent: #0b1f17;
+  --danger: #f97066;
+  --danger-hover: #fb8a81;
+  --danger-press: #e65c52;
+  --on-danger: #0b1f17;
+  --danger-soft: rgba(249, 112, 102, 0.12);
+
+  --focus-glow: rgba(198, 243, 107, 0.3);
+  --focus-ring: 0 0 0 2px var(--page), 0 0 0 4px var(--lime);
+  --focus-ring-tight: 0 0 0 2px var(--lime);
+  --shadow-pop: 0 18px 40px rgba(0, 0, 0, 0.5);
+  --chevron: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3e%3cpath d='M6 9l6 6 6-6' fill='none' stroke='%239FB2A8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+
+  --bs-body-color: var(--ink);
+  --bs-body-bg: var(--page);
+  --bs-emphasis-color: var(--ink);
+  --bs-secondary-color: var(--muted);
+  --bs-border-color: var(--border);
+  --bs-primary: #c6f36b;
+  --bs-primary-rgb: 198, 243, 107;
+  --bs-link-color: #c6f36b;
+  --bs-link-color-rgb: 198, 243, 107;
+  --bs-link-hover-color: #d7f79a;
+  --bs-link-hover-color-rgb: 215, 247, 154;
+}
+
+/* 2. Base and layout --------------------------------------------------- */
+
+body {
+  min-height: 100vh;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+
+.app-container {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: 20px;
+}
+
+.app-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 14px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink);
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--forest);
+  color: var(--lime);
+}
+
+[data-bs-theme='dark'] .brand-mark {
+  box-shadow: inset 0 0 0 1px rgba(198, 243, 107, 0.25);
+}
+
+.brand-mark .logo-mark {
+  width: 32px;
+  height: 32px;
+}
+
+.brand-wordmark {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-block: 28px 56px;
+}
+
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page-eyebrow {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.page-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* List on the left, form and breakdown on the right. Narrow screens stack
+   them in that order, as in the design's mobile board. */
+.layout {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+
+.layout-main,
+.layout-side {
+  min-width: 0;
+}
+
+.layout-side {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (min-width: 992px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 380px;
+  }
+}
+
+/* Keep the form clear of the top edge when scrolled into view. */
+.scroll-target {
+  scroll-margin-top: 16px;
+}
+
+@media (max-width: 575.98px) {
+  .app-container {
+    padding-inline: 16px;
+  }
+
+  .app-main {
+    padding-top: 20px;
+  }
+
+  .page-title {
+    font-size: 28px;
+  }
+}
+
+/* 3. Panels and notices ------------------------------------------------ */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.panel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.panel-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+@media (max-width: 575.98px) {
+  .panel {
+    padding: 20px 16px;
+    border-radius: 20px;
+  }
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 12px 12px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.notice-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 30%, transparent);
+}
+
+.notice p {
+  margin: 0;
+}
+
+.spinner-border {
+  color: var(--primary);
+}
+
+/* 4. Buttons ------------------------------------------------------------
+   Built on Bootstrap's .btn variables: 48px tall, 14px corners. Forest
+   primary for most actions, lime accent for "add", outline, ghost and
+   danger variants. */
+
+.btn {
+  --bs-btn-padding-x: 20px;
+  --bs-btn-padding-y: 0;
+  --bs-btn-font-family: var(--font-body);
+  --bs-btn-font-size: 15px;
+  --bs-btn-font-weight: 500;
+  --bs-btn-line-height: 1.2;
+  --bs-btn-border-width: 1.5px;
+  --bs-btn-border-radius: 14px;
+  --bs-btn-focus-box-shadow: var(--focus-ring);
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-disabled-bg: var(--subtle);
+  --bs-btn-disabled-color: var(--disabled);
+  --bs-btn-disabled-border-color: var(--subtle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+.btn .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-primary {
+  --bs-btn-color: var(--on-primary);
+  --bs-btn-bg: var(--primary);
+  --bs-btn-border-color: var(--primary);
+  --bs-btn-hover-color: var(--on-primary);
+  --bs-btn-hover-bg: var(--primary-hover);
+  --bs-btn-hover-border-color: var(--primary-hover);
+  --bs-btn-active-color: var(--on-primary);
+  --bs-btn-active-bg: var(--primary-press);
+  --bs-btn-active-border-color: var(--primary-press);
+}
+
+.btn-accent {
+  --bs-btn-color: var(--on-accent);
+  --bs-btn-bg: var(--lime);
+  --bs-btn-border-color: var(--lime);
+  --bs-btn-hover-color: var(--on-accent);
+  --bs-btn-hover-bg: var(--lime-hover);
+  --bs-btn-hover-border-color: var(--lime-hover);
+  --bs-btn-active-color: var(--on-accent);
+  --bs-btn-active-bg: var(--lime-press);
+  --bs-btn-active-border-color: var(--lime-press);
+}
+
+.btn-outline {
+  --bs-btn-color: var(--primary);
+  --bs-btn-bg: var(--surface);
+  --bs-btn-border-color: var(--border);
+  --bs-btn-hover-color: var(--primary);
+  --bs-btn-hover-bg: var(--surface-hover);
+  --bs-btn-hover-border-color: var(--primary);
+  --bs-btn-active-color: var(--primary);
+  --bs-btn-active-bg: var(--subtle);
+  --bs-btn-active-border-color: var(--primary);
+}
+
+.btn-ghost {
+  --bs-btn-color: var(--primary);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: var(--primary);
+  --bs-btn-hover-bg: var(--subtle);
+  --bs-btn-hover-border-color: var(--subtle);
+  --bs-btn-active-color: var(--primary);
+  --bs-btn-active-bg: var(--subtle-strong);
+  --bs-btn-active-border-color: var(--subtle-strong);
+  --bs-btn-disabled-bg: transparent;
+  --bs-btn-disabled-border-color: transparent;
+}
+
+.btn-danger {
+  --bs-btn-color: var(--on-danger);
+  --bs-btn-bg: var(--danger);
+  --bs-btn-border-color: var(--danger);
+  --bs-btn-hover-color: var(--on-danger);
+  --bs-btn-hover-bg: var(--danger-hover);
+  --bs-btn-hover-border-color: var(--danger-hover);
+  --bs-btn-active-color: var(--on-danger);
+  --bs-btn-active-bg: var(--danger-press);
+  --bs-btn-active-border-color: var(--danger-press);
+}
+
+.btn-sm {
+  --bs-btn-padding-x: 14px;
+  --bs-btn-font-size: 14px;
+  --bs-btn-border-radius: 12px;
+  min-height: 36px;
+}
+
+.btn-block {
+  width: 100%;
+  min-height: 52px;
+}
+
+.btn-icon {
+  --bs-btn-padding-x: 0;
+  width: 44px;
+  min-height: 44px;
+}
+
+.btn-icon-sm {
+  --bs-btn-border-radius: 10px;
+  width: 36px;
+  min-height: 36px;
+}
+
+.btn-icon-danger {
+  --bs-btn-hover-color: var(--danger);
+  --bs-btn-active-color: var(--danger);
+}
+
+/* 5. Inputs, chips, date picker ------------------------------------------
+   52px tall, 16px text so phones don't zoom, lime glow on focus. */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.field-label {
+  float: none;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+/* A legend sits outside the fieldset's flex layout, so gap skips it. */
+legend.field-label {
+  margin-bottom: 8px;
+}
+
+.field-hint {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.field-error,
+.form-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--danger);
+}
+
+.form-error {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.form-control,
+.form-select {
+  min-height: 52px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background-color: var(--surface);
+  color: var(--ink);
+  font-size: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.form-control::placeholder {
+  color: var(--disabled);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  background-color: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 0 0 0.5px var(--primary), 0 0 0 4.5px var(--focus-glow);
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  padding-right: 16px;
+  border-color: var(--danger);
+  background-image: none;
+  box-shadow: 0 0 0 0.5px var(--danger);
+}
+
+.form-control.is-invalid:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 0.5px var(--danger), 0 0 0 4.5px var(--danger-soft);
+}
+
+textarea.form-control {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.form-select {
+  padding-right: 44px;
+  background-image: var(--chevron);
+  background-position: right 14px center;
+  background-size: 20px 20px;
+}
+
+/* Hero amount field: big Space Grotesk number with a forest "$" badge. */
+.amount-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 0 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  background: var(--page);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.amount-field:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.5px var(--primary), 0 0 0 4.5px var(--focus-glow);
+}
+
+.amount-field.is-invalid {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 0.5px var(--danger);
+}
+
+.amount-badge {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 6px;
+  border-radius: 12px;
+  background: var(--forest);
+  color: var(--lime);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.amount-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.amount-input::placeholder {
+  color: var(--disabled);
+}
+
+/* Category chips: radio buttons drawn as pills. Selected = lime. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.chip .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+.chip:hover {
+  border-color: var(--primary);
+}
+
+.chip input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chip:has(input:checked) {
+  border-color: var(--lime);
+  background: var(--lime);
+  color: var(--forest);
+}
+
+.chip:has(input:checked) .icon {
+  color: var(--forest);
+}
+
+.chip:has(input:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+
+.chips.is-invalid .chip:not(:has(input:checked)) {
+  border-color: var(--danger);
+}
+
+/* Date picker: a field that opens a calendar card below (or above) it. */
+.datepicker {
+  position: relative;
+}
+
+.date-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.date-field .icon {
+  color: var(--muted);
+}
+
+.date-field:hover {
+  border-color: var(--primary);
+}
+
+.date-field:focus-visible,
+.date-field[aria-expanded='true'] {
+  outline: 0;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.5px var(--primary), 0 0 0 4.5px var(--focus-glow);
+}
+
+.date-field.is-invalid {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 0.5px var(--danger);
+}
+
+.date-placeholder {
+  color: var(--disabled);
+}
+
+.datepicker-panel {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--hairline);
+}
+
+.datepicker-panel.is-above {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
+.datepicker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.datepicker-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.datepicker-grid {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+
+.datepicker-grid th {
+  padding: 2px 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--muted);
+}
+
+.datepicker-grid td {
+  padding: 0;
+  text-align: center;
+}
+
+.day {
+  width: 100%;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.day:hover {
+  background: var(--subtle);
+}
+
+.day.is-outside {
+  color: var(--disabled);
+}
+
+.day.is-today {
+  box-shadow: inset 0 0 0 1.5px var(--primary);
+  font-weight: 600;
+}
+
+.day.is-selected,
+.day.is-selected:hover {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.day:focus-visible {
+  outline: 0;
+  box-shadow: var(--focus-ring-tight);
+}
+
+.datepicker-foot {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+}
+
+/* Filter bar: filled pill search, then the selects. */
+.filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.search-pill {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  margin: 0;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--subtle);
+  color: var(--muted);
+  cursor: text;
+  transition: box-shadow 0.15s;
+}
+
+.search-pill:focus-within {
+  box-shadow: 0 0 0 2px var(--primary), 0 0 0 6px var(--focus-glow);
+}
+
+.search-pill input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.search-pill input::placeholder {
+  color: var(--muted);
+}
+
+@media (max-width: 575.98px) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filters .filter-sort {
+    grid-column: 1 / -1;
+  }
+}
+
+/* 6. Stat cards -------------------------------------------------------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+  overflow: hidden;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.stat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stat-label {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.stat-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--subtle);
+  color: var(--icon);
+}
+
+.stat-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.stat-value {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.stat-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.stat-note .icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* The one forest "hero" card per screen, with the logo as a watermark. */
+.stat-hero {
+  background: var(--forest);
+  box-shadow: none;
+  color: #ffffff;
+}
+
+[data-bs-theme='dark'] .stat-hero {
+  box-shadow: inset 0 0 0 1px rgba(198, 243, 107, 0.2);
+}
+
+.stat-hero .stat-label {
+  color: #cfe0d6;
+}
+
+.stat-hero .stat-value {
+  font-size: 32px;
+  color: #ffffff;
+}
+
+.stat-hero .stat-note {
+  color: var(--lime);
+}
+
+.stat-watermark {
+  position: absolute;
+  right: -30px;
+  bottom: -40px;
+  width: 160px;
+  height: 160px;
+  color: var(--lime);
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+/* 7. Expense list and breakdown --------------------------------------- */
+
+.cat-tile {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--subtle);
+  color: var(--icon);
+}
+
+.cat-tile-sm {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.tx-list {
+  margin: 0 -12px;
+  padding: 0;
+  list-style: none;
+}
+
+.tx-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+}
+
+.tx-row + .tx-row {
+  border-top: 1px solid var(--hairline);
+}
+
+.tx-row.is-editing {
+  background: var(--page);
+  box-shadow: inset 0 0 0 1.5px var(--primary);
+}
+
+.tx-row.is-editing,
+.tx-row.is-editing + .tx-row {
+  border-top-color: transparent;
+}
+
+.tx-main {
+  min-width: 0;
+}
+
+.tx-name,
+.tx-meta {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tx-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.tx-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.tx-amount {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.tx-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tx-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline);
+}
+
+.tx-total-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.tx-total-amount {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Phones: amount above the action buttons so the title keeps its room. */
+@media (max-width: 575.98px) {
+  .tx-list {
+    margin-inline: -8px;
+  }
+
+  .tx-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'tile main amount'
+      'tile main actions';
+    row-gap: 2px;
+    padding: 10px 8px;
+  }
+
+  .tx-row > .cat-tile {
+    grid-area: tile;
+  }
+
+  .tx-main {
+    grid-area: main;
+  }
+
+  .tx-amount {
+    grid-area: amount;
+    justify-self: end;
+  }
+
+  .tx-actions {
+    grid-area: actions;
+    justify-self: end;
+  }
+}
+
+.breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.breakdown-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.breakdown-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.breakdown-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.breakdown-detail {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.breakdown-pct {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--subtle);
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+}
+
+/* The form gets a forest outline while it edits an existing expense. */
+.expense-form.is-editing {
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
+
+/* 8. Empty states ------------------------------------------------------ */
+
+.empty-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px 24px;
+  border: 1.5px dashed var(--border);
+  border-radius: 24px;
+  background: var(--page);
+  text-align: center;
+}
+
+.empty-mark {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: var(--forest);
+  color: var(--lime);
+}
+
+.empty-mark .logo-mark {
+  width: 44px;
+  height: 44px;
+}
+
+.empty-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.empty-text {
+  max-width: 260px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.empty-inline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 8px;
+  text-align: center;
+}
+
+/* 9. Income, budgets, currency ----------------------------------------- */
+
+/* Segmented control (radio buttons). "soft" = the list's All / Expenses /
+   Income filter; "strong" = the form's Expense / Income switch. */
+.segmented {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--subtle);
+}
+
+.segment {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.segment input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.segment .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.segmented-soft .segment:has(input:checked) {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(11, 31, 23, 0.08);
+}
+
+.segment:has(input:focus-visible) {
+  box-shadow: var(--focus-ring-tight);
+}
+
+.segmented-strong {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-radius: 16px;
+}
+
+.segmented-strong .segment {
+  min-height: 44px;
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.segmented-strong .segment:has(input:checked) {
+  background: var(--forest);
+  color: #ffffff;
+}
+
+.segmented-strong .segment:has(input:checked) .icon {
+  color: var(--lime);
+}
+
+.panel-head-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+/* Money in: lime tile and green amount, as in the design. */
+.cat-tile.is-income {
+  background: var(--lime);
+  color: var(--forest);
+}
+
+.tx-amount.is-income {
+  color: var(--income);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Light/dark toggle - the design's grey header icon button. */
+.header-icon-btn {
+  --bs-btn-color: var(--primary);
+  --bs-btn-bg: var(--subtle);
+  --bs-btn-border-color: var(--subtle);
+  --bs-btn-hover-color: var(--primary);
+  --bs-btn-hover-bg: var(--subtle-strong);
+  --bs-btn-hover-border-color: var(--subtle-strong);
+  --bs-btn-active-color: var(--primary);
+  --bs-btn-active-bg: var(--subtle-strong);
+  --bs-btn-active-border-color: var(--subtle-strong);
+}
+
+.header-icon-btn .icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Budgets */
+.breakdown-pct.is-danger,
+.stat-note.is-danger {
+  color: var(--danger);
+}
+
+.bar-fill.is-danger {
+  background: var(--danger);
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.budget-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--page);
+}
+
+.budget-form-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.budget-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.amount-field-sm {
+  min-height: 52px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.amount-field-sm .amount-badge {
+  min-width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.amount-field-sm .amount-input {
+  font-size: 20px;
+}
+
+.amount-field-sm .amount-input::placeholder {
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* 10. Dropdowns (components/Select.jsx) ---------------------------------
+   The closed button matches the inputs; the open menu is a card like the
+   date picker, with icons, a check on the chosen option and a grey
+   highlight that follows the mouse or arrow keys. */
+
+.select {
+  position: relative;
+  min-width: 0;
+}
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 12px 0 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.select-trigger:hover {
+  border-color: var(--primary);
+}
+
+.select-trigger:focus-visible,
+.select-trigger[aria-expanded='true'] {
+  outline: 0;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.5px var(--primary), 0 0 0 4.5px var(--focus-glow);
+}
+
+.select-trigger > .icon {
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+
+.select-trigger[aria-expanded='true'] > .icon {
+  transform: rotate(180deg);
+}
+
+.select-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.select-value .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+
+.select-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Filter bar: a little shorter, like the search pill next to it. */
+.select-filter .select-trigger {
+  min-height: 48px;
+  font-size: 15px;
+}
+
+/* Phones: two filters share a row, so drop the icon from the closed
+   button (the open menu still shows it) to leave room for the text. */
+@media (max-width: 575.98px) {
+  .select-filter .select-trigger {
+    padding: 0 8px 0 12px;
+  }
+
+  .select-filter .select-value .icon {
+    display: none;
+  }
+}
+
+/* Header (currency): the design's grey header button. */
+.select-header {
+  flex: none;
+}
+
+.select-header .select-trigger {
+  min-height: 44px;
+  padding: 0 10px 0 6px;
+  border: 0;
+  background: var(--subtle);
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.select-header .select-trigger:hover {
+  background: var(--subtle-strong);
+}
+
+.select-header .select-trigger:focus-visible,
+.select-header .select-trigger[aria-expanded='true'] {
+  box-shadow: var(--focus-ring);
+}
+
+/* The open menu. */
+.select-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: max(100%, 220px);
+  max-height: 304px;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--hairline);
+  overscroll-behavior: contain;
+}
+
+.select-menu.is-above {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+
+.select-menu.is-right {
+  left: auto;
+  right: 0;
+}
+
+.select-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: 10px;
+  color: var(--ink);
+  font-size: 15px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.select-option.is-active {
+  background: var(--subtle);
+}
+
+.select-option .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+
+.select-option[aria-selected='true'] {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.select-option[aria-selected='true'] .icon {
+  color: var(--primary);
+}
+
+.select-option-text {
+  flex: 1;
+}
+
+.select-option-hint {
+  margin-left: 8px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* Currency symbol on a small tile, in the menu and the header button. */
+.option-badge {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--icon);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.select-option .option-badge {
+  background: var(--subtle);
+}
+
+.select-option.is-active .option-badge {
+  background: var(--surface);
+}
+
+.select-option[aria-selected='true'] .option-badge {
+  background: var(--lime);
+  color: var(--forest);
+}

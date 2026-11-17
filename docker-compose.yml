@@ -1,0 +1,32 @@
+# Local development services.
+#   docker compose up -d      start
+#   docker compose ps         status
+#   docker compose down       stop (data survives)
+#   docker compose down -v    stop and DELETE all data
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: expense-tracker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: expense_tracker
+      POSTGRES_USER: expense_user
+      POSTGRES_PASSWORD: expense_pass
+    ports:
+      # host:container - 5434 on the host because the formsflow stack
+      # already publishes Postgres on 5431, 5432 and 5433.
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Runs once, when the data volume is first created: makes the
+      # separate database the test suite uses.
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U expense_user -d expense_tracker"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
