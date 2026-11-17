@@ -23,9 +23,8 @@ export function amountError(raw, decimals = 2, label = 'Amount') {
 export function validateExpense(values, decimals = 2) {
   const errors = {}
 
-  const title = values.title.trim()
-  if (!title) errors.title = values.type === 'income' ? 'Enter a source.' : 'Enter a title.'
-  else if (title.length > LIMITS.title) {
+  // Title is optional: the API names untitled entries "food1", "food2", ...
+  if (values.title.trim().length > LIMITS.title) {
     errors.title = `Keep it under ${LIMITS.title} characters.`
   }
 

@@ -27,6 +27,13 @@ class Config:
     # Legacy change-tracking feature: extra memory, no benefit to us.
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Login (see app/auth.py and README "Login"). Tokens must come from this
+    # Auth0 tenant and be issued for this API. Neither value is a secret.
+    AUTH0_DOMAIN = (
+        os.environ.get("AUTH0_DOMAIN", "").strip().removeprefix("https://").rstrip("/")
+    )
+    AUTH0_AUDIENCE = os.environ.get("AUTH0_AUDIENCE", "").strip()
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
@@ -39,6 +46,10 @@ class TestingConfig(Config):
         "TEST_DATABASE_URL",
         "postgresql+psycopg://expense_user:expense_pass@localhost:5434/expense_tracker_test",
     )
+    # Tests sign their own tokens (tests/conftest.py); these just have to
+    # match what they put in the tokens. Never a real tenant.
+    AUTH0_DOMAIN = "spendora-test.example"
+    AUTH0_AUDIENCE = "https://api.spendora.test"
 
 
 class ProductionConfig(Config):
