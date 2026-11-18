@@ -71,6 +71,13 @@ export const ReceiptIcon = () => (
   <PathIcon d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z M9 8h6 M9 12h6 M9 16h3" />
 )
 
+// CSV import / export.
+export const UploadIcon = () => <PathIcon d="M12 15V4 M7 9l5-5 5 5 M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" />
+export const DownloadIcon = () => <PathIcon d="M12 4v11 M7 10l5 5 5-5 M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" />
+export const FileTextIcon = () => (
+  <PathIcon d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z M14 3v5h5 M9 13h6 M9 17h6" />
+)
+
 // Heads-up panel: budget warnings and tips.
 export const AlertTriangleIcon = () => <PathIcon d="M12 4l9 16H3z M12 10v4 M12 17h.01" />
 export const AlertCircleIcon = () => (

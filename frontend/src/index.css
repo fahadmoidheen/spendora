@@ -10,7 +10,9 @@
                                  11. Login screens and account menu
                                  12. Phones and the installed app (PWA)
                                  13. Insights charts
-                                 14. Heads-up panel and budget alerts  */
+                                 14. Heads-up panel and budget alerts
+                                 15. CSV import and export
+                                 16. PDF report and printing           */
 
 /* 1. Tokens ------------------------------------------------------------ */
 
@@ -2465,4 +2467,750 @@ body,
 
 .bar-fill.is-warning {
   background: var(--warning-fill);
+}
+
+/* 15. CSV import and export ----------------------------------------------
+   Import / Export sit in the Transactions panel head; the import dialog is
+   a native <dialog> (focus trap, Escape and backdrop come with it). Phones
+   get it full screen. */
+
+.panel-tools {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.field-note.is-warning {
+  color: var(--warning);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(880px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(92vh, 1000px);
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--hairline);
+}
+
+.sheet:not([open]) {
+  display: none;
+}
+
+.sheet::backdrop {
+  background: rgba(11, 31, 23, 0.45);
+}
+
+[data-bs-theme='dark'] .sheet::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 16px 24px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sheet-head .panel-sub {
+  display: block;
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.sheet-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+/* Step 1: pick a file. */
+.import-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 40px 20px;
+  border: 1.5px dashed var(--border);
+  border-radius: 20px;
+  background: var(--page);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.import-drop:hover,
+.import-drop.is-dragging {
+  border-color: var(--primary);
+  background: var(--surface-hover);
+}
+
+.import-drop:has(input:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+
+.import-drop-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 6px;
+  border-radius: 16px;
+  background: var(--forest);
+  color: var(--lime);
+}
+
+.import-drop-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.import-drop-text {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Step 2: columns, then the rows. */
+.import-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.import-columns-head,
+.import-review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.import-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.import-columns .segmented {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.import-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--hairline);
+}
+
+.import-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 12px;
+  cursor: pointer;
+}
+
+.import-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.import-summary .is-problem {
+  color: var(--danger);
+}
+
+.import-check {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.import-check:disabled {
+  cursor: not-allowed;
+}
+
+.import-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.import-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 170px 110px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+}
+
+.import-row + .import-row {
+  border-top: 1px solid var(--hairline);
+}
+
+.import-row.is-off .import-main,
+.import-row.is-off .import-amount {
+  opacity: 0.55;
+}
+
+.import-main {
+  min-width: 0;
+}
+
+.import-title {
+  margin: 0;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.import-muted {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.import-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.import-tag {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--subtle);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.import-tag.is-problem {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.import-income-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--good-soft);
+  color: var(--income);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.import-amount {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.import-amount.is-income {
+  color: var(--income);
+}
+
+.import-more {
+  align-self: center;
+}
+
+/* Small dropdown for one row's category. */
+.select-compact .select-trigger {
+  min-height: 38px;
+  padding: 0 8px 0 10px;
+  border-radius: 11px;
+  font-size: 14px;
+}
+
+.select-compact .select-value .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.sheet-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 24px 20px;
+  border-top: 1px solid var(--hairline);
+}
+
+.sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 767.98px) {
+  .sheet {
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .sheet-head {
+    padding: calc(16px + env(safe-area-inset-top)) 12px 12px 16px;
+  }
+
+  .sheet-body {
+    padding: 16px;
+  }
+
+  .sheet-foot {
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .sheet-actions .btn {
+    flex: 1;
+  }
+
+  /* Row: tick, text and amount on top, category underneath. */
+  .import-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'check main amount'
+      '. category category';
+    padding: 10px 4px;
+  }
+
+  .import-row > .import-check {
+    grid-area: check;
+  }
+
+  .import-main {
+    grid-area: main;
+  }
+
+  .import-amount {
+    grid-area: amount;
+  }
+
+  .import-category {
+    grid-area: category;
+  }
+
+  .import-columns .segment {
+    padding: 0 10px;
+    font-size: 13px;
+  }
+}
+
+/* 16. PDF report and printing ---------------------------------------------
+   components/MoneyReport.jsx. The report is a light A4 page in both
+   themes (it sets its own light tokens). When printing, only #print-root
+   (a copy of the report on <body>) is shown. */
+
+.report {
+  --ink: #0b1f17;
+  --muted: #3f5249;
+  --border: #c9d1c9;
+  --hairline: #e7ece4;
+  --subtle: #e7ece4;
+  --income: #1f7a4d;
+  --danger: #b42318;
+  --warning-fill: #f79009;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.45;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.report p,
+.report h1,
+.report h2 {
+  margin: 0;
+}
+
+.report-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--forest);
+}
+
+.report-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.report-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--forest);
+  color: var(--lime);
+}
+
+.report-mark .logo-mark {
+  width: 26px;
+  height: 26px;
+}
+
+.report-wordmark {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.report-kicker {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-align: right;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.report-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: right;
+}
+
+.report-meta {
+  margin-top: 10px !important;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.report-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+  break-inside: avoid;
+}
+
+.report-total {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f3f5ef;
+}
+
+.report-total-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.report-total-value {
+  margin: 4px 0 2px !important;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.report-total-note {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.report-total.is-net {
+  background: var(--forest);
+  color: #ffffff;
+}
+
+.report-total.is-net .report-total-label,
+.report-total.is-net .report-total-note {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.report-total.is-net .report-total-value {
+  color: var(--lime);
+}
+
+.report-total.is-net.is-negative .report-total-value {
+  color: #ffb4ab;
+}
+
+.report-section {
+  margin-top: 26px;
+}
+
+.report-section h2 {
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  break-after: avoid;
+}
+
+.report-count {
+  margin-left: 4px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-table th {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.report-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: top;
+}
+
+.report-table tr {
+  break-inside: avoid;
+}
+
+.report-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.report-table tfoot td {
+  border-top: 1px solid var(--border);
+  border-bottom: 0;
+  font-weight: 600;
+}
+
+.report-share-head {
+  width: 34%;
+}
+
+.report-share {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-bar {
+  flex: 1;
+  min-width: 60px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--subtle);
+}
+
+.report-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--forest);
+}
+
+.report-bar.is-warning > span {
+  background: var(--warning-fill);
+}
+
+.report-bar.is-danger > span {
+  background: var(--danger);
+}
+
+.report-share-pct {
+  width: 36px;
+  text-align: right;
+}
+
+.report-over {
+  color: var(--danger);
+}
+
+.report-income {
+  color: var(--income);
+}
+
+.report-note {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.report-tx-date {
+  width: 76px;
+  white-space: nowrap;
+}
+
+.report-tx-category {
+  width: 110px;
+}
+
+.report-tx-amount {
+  width: 110px;
+}
+
+.report-table .report-month-row th {
+  padding-top: 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+  break-after: avoid;
+}
+
+.report-empty {
+  margin-top: 26px !important;
+  padding: 24px;
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.report-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+/* The dialog: period controls, then the report on a grey "desk". */
+.report-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.report-preview {
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--subtle);
+}
+
+.report-preview .report {
+  padding: 40px 44px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(11, 31, 23, 0.14);
+}
+
+/* Phones: show the page shrunk to fit, as it will print. */
+@media (max-width: 767.98px) {
+  .report-preview {
+    padding: 12px;
+    overflow-x: auto;
+  }
+
+  .report-preview .report {
+    width: 760px;
+    max-width: none;
+    zoom: 0.7;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .report-preview .report {
+    zoom: 0.42;
+  }
+}
+
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 13mm 16mm;
+
+    @bottom-right {
+      content: 'Page ' counter(page) ' of ' counter(pages);
+      font-family: 'Inter', sans-serif;
+      font-size: 8pt;
+      color: #6b7a72;
+    }
+  }
+
+  /* Dark mode sets color-scheme: dark, which would paint the page
+     margins dark. Paper is always white. */
+  :root,
+  [data-bs-theme] {
+    color-scheme: light !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  body > :not(#print-root),
+  dialog,
+  dialog::backdrop {
+    display: none !important;
+  }
+
+  #print-root {
+    display: block;
+  }
+
+  #print-root .report {
+    max-width: none;
+  }
 }

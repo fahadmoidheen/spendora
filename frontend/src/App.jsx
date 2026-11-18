@@ -15,7 +15,16 @@ import ExpenseFilters from './components/ExpenseFilters'
 import ExpenseForm from './components/ExpenseForm'
 import ExpenseList from './components/ExpenseList'
 import HeadsUp from './components/HeadsUp'
-import { CloseIcon, LogoMark, PlusIcon } from './components/Icons'
+import {
+  CloseIcon,
+  DownloadIcon,
+  FileTextIcon,
+  LogoMark,
+  PlusIcon,
+  UploadIcon,
+} from './components/Icons'
+import ImportDialog from './components/ImportDialog'
+import ReportDialog from './components/ReportDialog'
 import Segmented from './components/Segmented'
 import SummaryCards from './components/SummaryCards'
 import ThemeToggle from './components/ThemeToggle'
@@ -23,6 +32,7 @@ import UserMenu from './components/UserMenu'
 import { loadCurrency, makeMoney, MoneyContext, saveCurrency } from './currency'
 import { useOnlineStatus } from './useOnlineStatus'
 import { newlyCrossed } from './utils/budgetAlerts'
+import { downloadCsv, entriesToCsv } from './utils/csv'
 import { currentMonthKey, formatMonth, monthKey, toCents } from './utils/format'
 
 const EMPTY_FILTERS = { type: 'all', search: '', category: '', month: '', sort: 'newest' }
@@ -75,7 +85,7 @@ function applyFilters(entries, { type, search, category, month, sort }) {
 }
 
 // Shown when there is nothing at all yet (the design's empty card).
-function FirstEntryPrompt({ onAdd }) {
+function FirstEntryPrompt({ onAdd, onImport }) {
   return (
     <div className="empty-card">
       <span className="empty-mark" aria-hidden="true">
@@ -85,10 +95,16 @@ function FirstEntryPrompt({ onAdd }) {
       <p className="empty-text">
         Add your first expense or income to see where your money flows.
       </p>
-      <button type="button" className="btn btn-accent" onClick={onAdd}>
-        <PlusIcon />
-        Add expense
-      </button>
+      <div className="empty-actions">
+        <button type="button" className="btn btn-accent" onClick={onAdd}>
+          <PlusIcon />
+          Add expense
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={onImport}>
+          <UploadIcon />
+          Import a CSV
+        </button>
+      </div>
     </div>
   )
 }
@@ -106,6 +122,9 @@ export default function App() {
   const [view, setView] = useState('overview') // overview | insights
   const [currency, setCurrency] = useState(loadCurrency)
   const [budgetToast, setBudgetToast] = useState(null)
+  const [importing, setImporting] = useState(false)
+  const [reporting, setReporting] = useState(false)
+  const [notice, setNotice] = useState('')
   const formRef = useRef(null)
 
   const money = useMemo(() => makeMoney(currency), [currency])
@@ -192,6 +211,15 @@ export default function App() {
     if (crossed) setBudgetToast(crossed)
   }
 
+  function handleImported(created) {
+    const next = [...expenses, ...created]
+    setExpenses(next)
+    setImporting(false)
+    setNotice(`Imported ${created.length} ${created.length === 1 ? 'entry' : 'entries'}.`)
+    const crossed = newlyCrossed(budgets, expenses, next)
+    if (crossed) setBudgetToast(crossed)
+  }
+
   async function handleDelete(id) {
     try {
       await deleteExpense(id)
@@ -248,7 +276,7 @@ export default function App() {
       />
     )
   } else if (expenses.length === 0) {
-    listContent = <FirstEntryPrompt onAdd={startAdding} />
+    listContent = <FirstEntryPrompt onAdd={startAdding} onImport={() => setImporting(true)} />
   } else {
     listContent = (
       <div className="empty-inline">
@@ -295,6 +323,19 @@ export default function App() {
                 Log in again
               </button>
             )}
+          </div>
+        )}
+        {notice && (
+          <div className="notice notice-info" role="status">
+            <p>{notice}</p>
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon btn-icon-sm"
+              aria-label="Dismiss"
+              onClick={() => setNotice('')}
+            >
+              <CloseIcon />
+            </button>
           </div>
         )}
         {error && (
@@ -368,6 +409,37 @@ export default function App() {
                       )}
                     </span>
                   </div>
+                  <div className="panel-tools">
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setImporting(true)}
+                      disabled={status !== 'ready'}
+                    >
+                      <UploadIcon />
+                      Import
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => downloadCsv(entriesToCsv(expenses))}
+                      disabled={expenses.length === 0}
+                      title="Download every entry as a CSV file"
+                    >
+                      <DownloadIcon />
+                      CSV
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setReporting(true)}
+                      disabled={expenses.length === 0}
+                      title="Save a report as a PDF"
+                    >
+                      <FileTextIcon />
+                      PDF
+                    </button>
+                  </div>
                   <Segmented
                     name="type-filter"
                     label="Show"
@@ -407,6 +479,23 @@ export default function App() {
       <button type="button" className="fab" aria-label="Add expense" onClick={startAdding}>
         <PlusIcon />
       </button>
+
+      {importing && (
+        <ImportDialog
+          existing={expenses}
+          onClose={() => setImporting(false)}
+          onImported={handleImported}
+        />
+      )}
+
+      {reporting && (
+        <ReportDialog
+          entries={expenses}
+          budgets={budgets}
+          user={user}
+          onClose={() => setReporting(false)}
+        />
+      )}
 
       {/* Always mounted, so screen readers announce the notice when it appears. */}
       <div role="status" aria-live="polite">
