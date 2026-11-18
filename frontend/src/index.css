@@ -12,7 +12,8 @@
                                  13. Insights charts
                                  14. Heads-up panel and budget alerts
                                  15. CSV import and export
-                                 16. PDF report and printing           */
+                                 16. PDF report and printing
+                                 17. Loading, refresh and pages        */
 
 /* 1. Tokens ------------------------------------------------------------ */
 
@@ -3224,5 +3225,218 @@ body,
 
   #print-root .report {
     max-width: none;
+  }
+}
+
+/* 17. Loading, refresh and pages -------------------------------------------
+   Skeletons stand in for numbers and rows while data loads
+   (components/Skeleton.jsx); the header's refresh icon spins while it
+   reloads; the pager sits under the transactions list. */
+
+:root,
+[data-bs-theme='light'] {
+  --skeleton: #e7ece4;
+  --skeleton-shine: #f5f7f2;
+}
+
+[data-bs-theme='dark'] {
+  --skeleton: #1f3029;
+  --skeleton-shine: #2b3f36;
+}
+
+.skeleton {
+  display: block;
+  height: 14px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--skeleton) 30%, var(--skeleton-shine) 50%, var(--skeleton) 70%);
+  background-size: 300% 100%;
+  animation: skeleton-shine 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shine {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* On the forest "Net" card. */
+.stat-hero .skeleton {
+  --skeleton: rgba(255, 255, 255, 0.12);
+  --skeleton-shine: rgba(255, 255, 255, 0.24);
+}
+
+.skeleton-value {
+  width: 62%;
+  height: 32px;
+  border-radius: 10px;
+}
+
+.skeleton-note {
+  width: 46%;
+  height: 13px;
+  margin-block: 2px;
+}
+
+.skeleton-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-line.skeleton-small {
+  height: 11px;
+}
+
+.skeleton-tile {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+}
+
+.skeleton-tile-sm {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.skeleton-amount {
+  width: 76px;
+  height: 18px;
+}
+
+.skeleton-pct {
+  flex: none;
+  width: 36px;
+  height: 16px;
+}
+
+.skeleton-bar {
+  height: 8px;
+  border-radius: 999px;
+}
+
+.tx-row-skeleton {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+/* Header refresh button: the icon turns while data reloads. */
+.header-icon-btn.is-spinning .icon {
+  animation: refresh-spin 0.9s linear infinite;
+}
+
+@keyframes refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-icon-btn.is-spinning .icon {
+    animation: none;
+    opacity: 0.5;
+  }
+}
+
+/* Pager: range on the left, pages in the middle, page size on the right. */
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hairline);
+}
+
+.pager-range {
+  margin: 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.pager-pages {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pager-page {
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.pager-page:hover {
+  background: var(--subtle);
+}
+
+.pager-page.is-current {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.pager-page:focus-visible {
+  outline: 0;
+  box-shadow: var(--focus-ring-tight);
+}
+
+.pager-gap {
+  min-width: 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* Phones: "Page 2 of 6" between the arrows instead of every number. */
+.pager-status {
+  display: none;
+  padding: 0 6px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.pager-size {
+  width: 140px;
+}
+
+@media (max-width: 575.98px) {
+  .pager-page,
+  .pager-gap {
+    display: none;
+  }
+
+  .pager-status {
+    display: inline;
+  }
+
+  .pager {
+    gap: 10px 8px;
+  }
+
+  .pager-range {
+    width: 100%;
+  }
+
+  .pager-size {
+    width: 122px;
   }
 }
