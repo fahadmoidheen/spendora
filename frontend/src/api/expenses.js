@@ -12,7 +12,8 @@ function toPayload(values) {
   const income = values.type === 'income'
   return {
     type: values.type,
-    title: values.title,
+    // Blank -> null: the API then names it after the category ("food1").
+    title: values.title.trim() || null,
     amount: amountString(values.amount),
     category: income ? INCOME_CATEGORY : values.category,
     expense_date: values.expense_date,
@@ -30,6 +31,12 @@ export function createExpense(values) {
 
 export function updateExpense(id, values) {
   return request(`${BASE}/${id}`, { method: 'PUT', body: toPayload(values) })
+}
+
+// CSV import: entries already in API shape (utils/csvImport.js
+// toImportPayload). All or nothing. Resolves to { created, entries }.
+export function importExpenses(entries) {
+  return request(`${BASE}/import`, { method: 'POST', body: { entries } })
 }
 
 export function deleteExpense(id) {

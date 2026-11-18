@@ -60,6 +60,9 @@ export default function ExpenseForm({ editing, onSave, onCancel }) {
   const income = values.type === 'income'
   const noun = income ? 'income' : 'expense'
 
+  // What a blank title becomes (the API adds the next free number).
+  const autoName = (income ? 'Income' : values.category || 'Food').replace(/\s+/g, '').toLowerCase()
+
   const categoryNames = CATEGORIES.map((c) => c.name)
   if (
     values.category &&
@@ -190,7 +193,7 @@ export default function ExpenseForm({ editing, onSave, onCancel }) {
 
       <div className="field">
         <label htmlFor="title" className="field-label">
-          {income ? 'Source' : 'Title'}
+          {income ? 'Source' : 'Title'} <span className="field-hint">(optional)</span>
         </label>
         <input
           id="title"
@@ -202,11 +205,15 @@ export default function ExpenseForm({ editing, onSave, onCancel }) {
           placeholder={income ? 'e.g. Salary' : 'e.g. Weekly groceries'}
           autoComplete="off"
           aria-invalid={Boolean(errors.title)}
-          aria-describedby={errorId('title')}
+          aria-describedby={errorId('title') ?? 'title-hint'}
         />
-        {errors.title && (
+        {errors.title ? (
           <p id="title-error" className="field-error">
             {errors.title}
+          </p>
+        ) : (
+          <p id="title-hint" className="field-note">
+            Leave blank to name it {autoName}1, {autoName}2…
           </p>
         )}
       </div>

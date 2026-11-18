@@ -26,6 +26,18 @@ def _required_text(value, label, max_length):
     return value, None
 
 
+def _optional_text(value, label, max_length):
+    """Blank or missing -> None (the caller fills in a default)."""
+    if value is None:
+        return None, None
+    if not isinstance(value, str):
+        return None, f"{label} must be text."
+    value = value.strip()
+    if len(value) > max_length:
+        return None, f"{label} must be at most {max_length} characters."
+    return value or None, None
+
+
 def _money(value, label):
     # bool is a subclass of int in Python - don't let true become 1.00.
     if isinstance(value, bool) or not isinstance(value, (int, float, str)):
@@ -87,9 +99,11 @@ def validate_expense(payload) -> dict:
     """Return clean column values for an Expense, or raise ValidationError.
 
     ``type`` defaults to "expense". Income needs no category - it is stored
-    as "Income". Everything else is required except ``description``, so
-    the same rules serve create (POST) and full replace (PUT). Unknown keys
-    are ignored.
+    as "Income". ``title`` is optional: when blank it comes back as None and
+    the route names the entry automatically ("food1", "food2", ...).
+    ``description`` is optional too; everything else is required, so the
+    same rules serve create (POST) and full replace (PUT). Unknown keys are
+    ignored.
     """
     _require_object(payload)
 
@@ -100,7 +114,7 @@ def validate_expense(payload) -> dict:
 
     return _collect({
         "type": (kind, kind_error),
-        "title": _required_text(payload.get("title"), "Title", TITLE_MAX),
+        "title": _optional_text(payload.get("title"), "Title", TITLE_MAX),
         "amount": _money(payload.get("amount"), "Amount"),
         "category": _required_text(category, "Category", CATEGORY_MAX),
         "expense_date": _expense_date(payload.get("expense_date")),

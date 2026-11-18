@@ -7,22 +7,26 @@ out from that month's expenses in the same category.
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, DateTime, Numeric, String, func
+from sqlalchemy import CheckConstraint, DateTime, Numeric, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.extensions import db
+from app.models.expense import USER_ID_LENGTH
 
 
 class Budget(db.Model):
     __tablename__ = "budgets"
     __table_args__ = (
         CheckConstraint("monthly_limit > 0", name="ck_budgets_limit_positive"),
+        # One budget per category, per user.
+        UniqueConstraint("user_id", "category", name="uq_budgets_user_id_category"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
 
-    # One budget per category.
-    category: Mapped[str] = mapped_column(String(50), unique=True)
+    # Owner: the Auth0 user id (the token's "sub"). See app/auth.py.
+    user_id: Mapped[str] = mapped_column(String(USER_ID_LENGTH))
+    category: Mapped[str] = mapped_column(String(50))
     monthly_limit: Mapped[Decimal] = mapped_column(Numeric(10, 2))
 
     created_at: Mapped[datetime] = mapped_column(

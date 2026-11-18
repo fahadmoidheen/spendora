@@ -8,7 +8,7 @@ stable), a row is either money out (``type="expense"``) or money in
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, Date, DateTime, Numeric, String, Text, func
+from sqlalchemy import CheckConstraint, Date, DateTime, Index, Numeric, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.extensions import db
@@ -16,18 +16,26 @@ from app.extensions import db
 
 TYPES = ("expense", "income")
 
+# Auth0 user ids are like "google-oauth2|103547991597142817347".
+USER_ID_LENGTH = 128
+
 
 class Expense(db.Model):
-    """A single expense or income entry."""
+    """A single expense or income entry, owned by one user."""
 
     __tablename__ = "expenses"
     __table_args__ = (
         # Enforced by PostgreSQL itself, not just by application code.
         CheckConstraint("amount > 0", name="ck_expenses_amount_positive"),
         CheckConstraint("type IN ('expense', 'income')", name="ck_expenses_type"),
+        # Every list query is "this user's entries, newest first".
+        Index("ix_expenses_user_id_expense_date", "user_id", "expense_date"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
+
+    # Owner: the Auth0 user id (the token's "sub"). See app/auth.py.
+    user_id: Mapped[str] = mapped_column(String(USER_ID_LENGTH))
 
     type: Mapped[str] = mapped_column(
         String(10), default="expense", server_default="expense", index=True
