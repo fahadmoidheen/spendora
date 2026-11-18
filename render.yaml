@@ -14,7 +14,7 @@ services:
     # crosses between the two. Pairs: oregon = Neon "US West 2 (Oregon)",
     # virginia = "US East 1", frankfurt = "Europe Central 1",
     # singapore = "Asia Pacific 1 (Singapore)".
-    region: oregon
+    region: singapore
     rootDir: backend
     # Deploy a push only once its GitHub checks (.github/workflows/checks.yml)
     # have passed, so a commit that breaks the tests never goes live.
