@@ -192,6 +192,53 @@ Node: allow it on **Private** networks and set your home Wi-Fi to
 Private. If your PC's address changes (it can when Wi-Fi reconnects),
 repeat step 2 with the new one.
 
+## Install on your phone (PWA)
+
+Spendora is an installable web app (a PWA): from the browser you can add
+it to the home screen, and it then opens full screen with its own icon,
+like an app - no app store involved. The setup lives in
+`frontend/vite.config.js` (manifest and service worker, via
+`vite-plugin-pwa`).
+
+**Installing needs a real `https://` address** - the hosted site. Phones
+only offer to install from a site with a valid certificate; the
+self-signed certificate of `npm run dev:phone` is enough to log in and
+test, but not to install.
+
+- **Android (Chrome):** open the site, then tap **Install app** in the
+  menu (or the install banner when it appears).
+- **iPhone (Safari):** open the site, tap **Share**, then **Add to Home
+  Screen**.
+- **Desktop Chrome / Edge:** the install icon at the right of the address
+  bar.
+
+Good to know:
+
+- **Login:** the installed app keeps its own login - on iPhone it's
+  separate from Safari, so you log in once inside the app.
+- **Offline:** the app itself opens without a connection (its files are
+  stored on the device), but expenses always come live from the server.
+  Offline you see a "You're offline" banner and can't load or save
+  entries until you reconnect.
+- **Updates:** after a new version is deployed, the app shows "A new
+  version of Spendora is ready" - tap **Reload** to switch, or **Later**
+  to keep working. Nothing reloads by itself.
+- **Icons** are made from `frontend/public/pwa-icon.svg`. After changing
+  the logo, run `npm run generate-pwa-assets` in `frontend` and commit the
+  PNGs it writes to `public/`.
+
+**Trying it on your PC:** the service worker only runs in a production
+build. From `frontend`:
+
+```powershell
+npm run build
+npm run preview          # http://localhost:4173
+```
+
+To log in there, add `http://localhost:4173` to **Allowed Callback URLs**,
+**Allowed Logout URLs** and **Allowed Web Origins** of *Spendora web* in
+Auth0. Desktop Chrome then shows its install icon.
+
 ## API
 
 All `/api/expenses` and `/api/budgets` calls need `Authorization: Bearer

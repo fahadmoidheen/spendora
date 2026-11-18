@@ -3,9 +3,10 @@ import App from './App.jsx'
 import { AUTH0, authConfigured } from './auth'
 import AuthGate from './components/AuthGate'
 import { InsecureAddress, LoginNotConfigured } from './components/AuthScreens'
+import UpdatePrompt from './components/UpdatePrompt'
 
 // Decides what the page can show before the app itself.
-export default function Root() {
+function Screen() {
   if (!authConfigured) return <LoginNotConfigured />
 
   // Auth0's login library refuses to run on plain http:// (except
@@ -32,5 +33,15 @@ export default function Root() {
         <App />
       </AuthGate>
     </Auth0Provider>
+  )
+}
+
+export default function Root() {
+  return (
+    <>
+      <Screen />
+      {/* On every screen, signed in or not: "new version ready" toast. */}
+      <UpdatePrompt />
+    </>
   )
 }

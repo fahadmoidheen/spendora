@@ -2,10 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0b3d2e" />
+    <!-- viewport-fit=cover lets the app use the full screen around a phone's
+         notch; index.css keeps content inside the safe areas. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Browser bar / status bar colour; matches the header and follows the
+         light/dark theme (set below and by src/theme.js). -->
+    <meta name="theme-color" content="#ffffff" />
     <title>Spendora</title>
+    <meta name="description" content="Track where your money flows" />
+    <!-- Installed app on iPhone: home-screen icon and name. The rest comes
+         from the web app manifest that vite-plugin-pwa adds at build. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <meta name="apple-mobile-web-app-title" content="Spendora" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <!-- Fonts from the design: Space Grotesk for headings and amounts,
          Inter for everything else. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,7 +30,8 @@
       // Pick light or dark before the page draws, so there's no flash.
       // A choice made with the header toggle (saved by src/theme.js) wins;
       // until then the OS setting is followed, live. Bootstrap and our CSS
-      // read data-bs-theme.
+      // read data-bs-theme; the theme-color meta tints the phone's status
+      // bar to match the header (keep the colours in sync with theme.js).
       ;(() => {
         const osDark = window.matchMedia('(prefers-color-scheme: dark)')
         const saved = () => {
@@ -37,6 +50,9 @@
                 ? 'dark'
                 : 'light'
           document.documentElement.setAttribute('data-bs-theme', theme)
+          document
+            .querySelector('meta[name="theme-color"]')
+            ?.setAttribute('content', theme === 'dark' ? '#121e19' : '#ffffff')
         }
         apply()
         osDark.addEventListener('change', apply)
