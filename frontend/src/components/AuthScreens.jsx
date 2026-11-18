@@ -37,9 +37,11 @@ export function SignInScreen({ error, onGoogle, onEmail }) {
       <h1 className="auth-title">Spendora</h1>
       <p className="auth-text">See where your money flows. Log in to continue.</p>
 
+      {/* Auth0's own error text is technical ("Service not found: ..."), so
+          people get a plain sentence; AuthGate logs the details. */}
       {error && (
         <div className="notice notice-danger" role="alert">
-          <p>{error.message || 'Login failed. Try again.'}</p>
+          <p>Login didn’t work. Please try again.</p>
         </div>
       )}
 

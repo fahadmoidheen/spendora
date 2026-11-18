@@ -71,6 +71,11 @@ export const ReceiptIcon = () => (
   <PathIcon d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z M9 8h6 M9 12h6 M9 16h3" />
 )
 
+// Two arrows chasing each other: reload the data.
+export const RefreshIcon = () => (
+  <PathIcon d="M20 11a8 8 0 0 0-14.3-4.9L4 8 M4 3v5h5 M4 13a8 8 0 0 0 14.3 4.9L20 16 M20 21v-5h-5" />
+)
+
 // CSV import / export.
 export const UploadIcon = () => <PathIcon d="M12 15V4 M7 9l5-5 5 5 M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" />
 export const DownloadIcon = () => <PathIcon d="M12 4v11 M7 10l5 5 5-5 M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" />

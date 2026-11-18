@@ -1,4 +1,5 @@
 import { useAuth0 } from '@auth0/auth0-react'
+import { useEffect } from 'react'
 import { setAccessTokenGetter } from '../api/client'
 import { GOOGLE_CONNECTION } from '../auth'
 import { SignInScreen, SplashScreen } from './AuthScreens'
@@ -8,6 +9,12 @@ import { SignInScreen, SplashScreen } from './AuthScreens'
 export default function AuthGate({ children }) {
   const { isLoading, isAuthenticated, error, loginWithRedirect, getAccessTokenSilently } =
     useAuth0()
+
+  // The sign-in screen shows a plain "Login didn't work"; the details are
+  // here, for whoever is debugging.
+  useEffect(() => {
+    if (error) console.warn('Login failed:', error)
+  }, [error])
 
   if (isLoading) return <SplashScreen />
 

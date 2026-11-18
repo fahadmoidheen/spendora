@@ -21,11 +21,14 @@ import {
   FileTextIcon,
   LogoMark,
   PlusIcon,
+  RefreshIcon,
   UploadIcon,
 } from './components/Icons'
 import ImportDialog from './components/ImportDialog'
+import Pagination from './components/Pagination'
 import ReportDialog from './components/ReportDialog'
 import Segmented from './components/Segmented'
+import { TransactionsSkeleton } from './components/Skeleton'
 import SummaryCards from './components/SummaryCards'
 import ThemeToggle from './components/ThemeToggle'
 import UserMenu from './components/UserMenu'
@@ -34,8 +37,12 @@ import { useOnlineStatus } from './useOnlineStatus'
 import { newlyCrossed } from './utils/budgetAlerts'
 import { downloadCsv, entriesToCsv } from './utils/csv'
 import { currentMonthKey, formatMonth, monthKey, toCents } from './utils/format'
+import { loadPageSize, PAGE_SIZES, savePageSize } from './utils/pagination'
 
 const EMPTY_FILTERS = { type: 'all', search: '', category: '', month: '', sort: 'newest' }
+
+const SLOW_AFTER_MS = 4000 // then explain the wait
+const STALE_AFTER_MS = 2 * 60 * 1000 // refresh on return after this long
 
 const TYPE_FILTERS = [
   { value: 'all', label: 'All' },
@@ -130,26 +137,112 @@ export default function App() {
   const money = useMemo(() => makeMoney(currency), [currency])
   const closeBudgetToast = useCallback(() => setBudgetToast(null), [])
 
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([listExpenses(), listBudgets()])
-      .then(([entries, limits]) => {
-        if (cancelled) return
-        setExpenses(entries)
-        setBudgets(limits)
-        setStatus('ready')
-      })
-      .catch((err) => {
-        if (cancelled) return
+  // Loading entries and budgets. The first load (and "Try again") shows
+  // placeholders; a refresh keeps what's on screen and swaps in the new
+  // data. If it takes a while (the free server waking up), say so - in
+  // plain words, without server talk.
+  const [refreshing, setRefreshing] = useState(false)
+  const [slow, setSlow] = useState(false)
+  const loadingRef = useRef(false)
+  const loadedAtRef = useRef(0)
+
+  // The fetch itself. Every state change happens after it's under way, so
+  // the first load can start straight from an effect.
+  const runLoad = useCallback(async (quiet) => {
+    loadingRef.current = true
+    const slowTimer = setTimeout(() => setSlow(true), SLOW_AFTER_MS)
+    try {
+      const [entries, limits] = await Promise.all([listExpenses(), listBudgets()])
+      setExpenses(entries)
+      setBudgets(limits)
+      setStatus('ready')
+      setLoadError(null)
+      loadedAtRef.current = Date.now()
+    } catch (err) {
+      if (quiet) {
+        setError(`Couldn’t refresh. ${err.message}`)
+      } else {
         setLoadError(err)
         setStatus('error')
-      })
-    return () => {
-      cancelled = true
+      }
+    } finally {
+      clearTimeout(slowTimer)
+      setSlow(false)
+      setRefreshing(false)
+      loadingRef.current = false
     }
   }, [])
 
+  // From the refresh and "Try again" buttons, and on return to the app.
+  const loadData = useCallback(
+    ({ quiet = false } = {}) => {
+      if (loadingRef.current) return
+      if (quiet) {
+        setRefreshing(true)
+      } else {
+        setStatus('loading')
+        setLoadError(null)
+      }
+      runLoad(quiet)
+    },
+    [runLoad],
+  )
+
+  // First load - status starts as "loading", so placeholders are already up.
+  useEffect(() => {
+    if (!loadingRef.current) runLoad(false)
+  }, [runLoad])
+
+  // An installed app has no reload button and often stays open for days:
+  // refresh by itself when it comes back to the screen after a while, or
+  // when the connection returns.
+  useEffect(() => {
+    if (status !== 'ready') return undefined
+    function refreshIfStale() {
+      const stale = Date.now() - loadedAtRef.current > STALE_AFTER_MS
+      if (document.visibilityState === 'visible' && stale) loadData({ quiet: true })
+    }
+    function refreshNow() {
+      loadData({ quiet: true })
+    }
+    document.addEventListener('visibilitychange', refreshIfStale)
+    window.addEventListener('online', refreshNow)
+    return () => {
+      document.removeEventListener('visibilitychange', refreshIfStale)
+      window.removeEventListener('online', refreshNow)
+    }
+  }, [loadData, status])
+
   const shown = useMemo(() => applyFilters(expenses, filters), [expenses, filters])
+
+  // Pages of the (filtered) list. Changing a filter or the page size goes
+  // back to page 1; deleting the last row of the last page steps back one.
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(loadPageSize)
+  const transactionsRef = useRef(null)
+  const pageCount = Math.max(1, Math.ceil(shown.length / pageSize))
+  const currentPage = Math.min(page, pageCount)
+  const pageItems = shown.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  function updateFilters(next) {
+    setFilters(next)
+    setPage(1)
+  }
+
+  function goToPage(next) {
+    setPage(next)
+    // If the list's top has scrolled out of view, bring it back.
+    const panel = transactionsRef.current
+    if (panel && panel.getBoundingClientRect().top < 0) {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
+  function changePageSize(size) {
+    setPageSize(size)
+    savePageSize(size)
+    setPage(1)
+  }
 
   const months = useMemo(() => {
     const keys = new Set(expenses.map((e) => monthKey(e.expense_date)))
@@ -160,7 +253,7 @@ export default function App() {
   const filtersActive = Boolean(
     filters.type !== 'all' || filters.search || filters.category || filters.month,
   )
-  const clearFilters = () => setFilters({ ...EMPTY_FILTERS, sort: filters.sort })
+  const clearFilters = () => updateFilters({ ...EMPTY_FILTERS, sort: filters.sort })
 
   const breakdownLabel = [
     filters.month ? formatMonth(filters.month) : 'All time',
@@ -205,6 +298,7 @@ export default function App() {
     } else {
       const created = await createExpense(values)
       next = [...expenses, created]
+      setPage(1) // a new entry is at the top of the list
     }
     setExpenses(next)
     const crossed = newlyCrossed(budgets, expenses, next)
@@ -226,7 +320,7 @@ export default function App() {
       setExpenses((list) => list.filter((e) => e.id !== id))
       if (editing?.id === id) setEditing(null)
     } catch (err) {
-      setError(`Could not delete the entry. ${err.message}`)
+      setError(`Couldn’t delete the entry. ${err.message}`)
     }
   }
 
@@ -246,34 +340,41 @@ export default function App() {
       await deleteBudget(id)
       setBudgets((list) => list.filter((b) => b.id !== id))
     } catch (err) {
-      setError(`Could not delete the budget. ${err.message}`)
+      setError(`Couldn’t delete the budget. ${err.message}`)
     }
   }
 
   let listContent
   if (status === 'loading') {
-    listContent = (
-      <div className="empty-inline">
-        <div className="spinner-border" role="status">
-          <span className="visually-hidden">Loading…</span>
-        </div>
-      </div>
-    )
+    listContent = <TransactionsSkeleton />
   } else if (status === 'error') {
     listContent = (
       <div className="empty-inline">
         <h3 className="empty-title">Transactions couldn’t be loaded</h3>
-        <p className="empty-text">Fix the problem shown above, then refresh the page.</p>
+        <p className="empty-text">Use “Try again” above once the problem is fixed.</p>
       </div>
     )
   } else if (shown.length > 0) {
     listContent = (
-      <ExpenseList
-        expenses={shown}
-        editingId={editing?.id}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-      />
+      <>
+        <ExpenseList
+          expenses={pageItems}
+          totalEntries={shown}
+          editingId={editing?.id}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+        {shown.length > PAGE_SIZES[0] && (
+          <Pagination
+            page={currentPage}
+            pageCount={pageCount}
+            pageSize={pageSize}
+            total={shown.length}
+            onPage={goToPage}
+            onPageSize={changePageSize}
+          />
+        )}
+      </>
     )
   } else if (expenses.length === 0) {
     listContent = <FirstEntryPrompt onAdd={startAdding} onImport={() => setImporting(true)} />
@@ -300,6 +401,16 @@ export default function App() {
           </span>
           <div className="header-actions">
             <CurrencySelect value={currency} onChange={changeCurrency} />
+            <button
+              type="button"
+              className={`btn btn-icon header-icon-btn${refreshing ? ' is-spinning' : ''}`}
+              aria-label={refreshing ? 'Refreshing…' : 'Refresh'}
+              title="Refresh"
+              onClick={() => loadData({ quiet: status === 'ready' })}
+              disabled={refreshing || status === 'loading'}
+            >
+              <RefreshIcon />
+            </button>
             <ThemeToggle />
             <UserMenu
               user={user}
@@ -315,12 +426,21 @@ export default function App() {
             <p>You’re offline — changes can’t be saved until you reconnect.</p>
           </div>
         )}
+        {slow && (
+          <div className="notice notice-info" role="status">
+            <p>Taking a little longer than usual… This can take up to a minute.</p>
+          </div>
+        )}
         {status === 'error' && (
           <div className="notice notice-danger" role="alert">
-            <p>Could not load your data. {loadError?.message}</p>
-            {loadError?.status === 401 && (
+            <p>Couldn’t load your data. {loadError?.message}</p>
+            {loadError?.status === 401 ? (
               <button type="button" className="btn btn-danger btn-sm" onClick={() => loginWithRedirect()}>
                 Log in again
+              </button>
+            ) : (
+              <button type="button" className="btn btn-danger btn-sm" onClick={() => loadData()}>
+                Try again
               </button>
             )}
           </div>
@@ -385,19 +505,25 @@ export default function App() {
             {status === 'ready' && (
               <HeadsUp budgets={budgets} expenses={expenses} userId={user?.sub} />
             )}
-            <SummaryCards expenses={expenses} budgets={budgets} />
+            <SummaryCards expenses={expenses} budgets={budgets} status={status} />
 
             <div className="layout">
-              <section className="panel layout-main" aria-labelledby="transactions-title">
+              <section
+                ref={transactionsRef}
+                className="panel layout-main scroll-target"
+                aria-labelledby="transactions-title"
+              >
                 <div className="panel-head">
                   <div className="panel-head-text">
                     <h2 id="transactions-title" className="panel-title">
                       Transactions
                     </h2>
                     <span className="panel-sub">
-                      {filtersActive
-                        ? `${shown.length} of ${expenses.length}`
-                        : `${expenses.length} total`}
+                      {status !== 'ready'
+                        ? null
+                        : filtersActive
+                          ? `${shown.length} of ${expenses.length}`
+                          : `${expenses.length} total`}
                       {filtersActive && (
                         <button
                           type="button"
@@ -445,10 +571,10 @@ export default function App() {
                     label="Show"
                     options={TYPE_FILTERS}
                     value={filters.type}
-                    onChange={(type) => setFilters((f) => ({ ...f, type }))}
+                    onChange={(type) => updateFilters((f) => ({ ...f, type }))}
                   />
                 </div>
-                <ExpenseFilters filters={filters} months={months} onChange={setFilters} />
+                <ExpenseFilters filters={filters} months={months} onChange={updateFilters} />
                 {listContent}
               </section>
 
@@ -466,8 +592,9 @@ export default function App() {
                   expenses={expenses}
                   onSave={handleSaveBudget}
                   onDelete={handleDeleteBudget}
+                  status={status}
                 />
-                <CategoryBreakdown expenses={shown} label={breakdownLabel} />
+                <CategoryBreakdown expenses={shown} label={breakdownLabel} status={status} />
               </div>
             </div>
           </>

@@ -2,6 +2,7 @@ import { useMoney } from '../currency'
 import { sumCents, toCents } from '../utils/format'
 import { onlyExpenses } from '../utils/transactions'
 import CategoryTile from './CategoryTile'
+import { BreakdownSkeleton } from './Skeleton'
 
 function totalsByCategory(expenses) {
   const totals = {}
@@ -14,7 +15,8 @@ function totalsByCategory(expenses) {
 }
 
 // Where the shown expenses went, by category (income is left out).
-export default function CategoryBreakdown({ expenses, label }) {
+// status: "loading" | "error" | "ready" (App's load status).
+export default function CategoryBreakdown({ expenses, label, status = 'ready' }) {
   const money = useMoney()
   const spending = onlyExpenses(expenses)
   const rows = totalsByCategory(spending)
@@ -29,7 +31,11 @@ export default function CategoryBreakdown({ expenses, label }) {
         <span className="panel-sub">{label}</span>
       </div>
 
-      {rows.length === 0 ? (
+      {status === 'loading' ? (
+        <BreakdownSkeleton rows={4} />
+      ) : status === 'error' ? (
+        <p className="stat-note">Spending couldn’t be loaded.</p>
+      ) : rows.length === 0 ? (
         <p className="stat-note">No spending to show yet.</p>
       ) : (
         <ul className="breakdown">
