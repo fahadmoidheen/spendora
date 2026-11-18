@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Privacy – Spendora</title>
+    <meta name="description" content="What Spendora stores about you, where, and how to remove it." />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&display=swap"
+    />
+    <script>
+      // Same light/dark choice as the app (saved by src/theme.js).
+      ;(() => {
+        let saved = null
+        try {
+          saved = localStorage.getItem('spendora:theme')
+        } catch {
+          // Storage blocked - follow the system setting.
+        }
+        const dark =
+          saved === 'dark' ||
+          (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+      })()
+    </script>
+    <style>
+      :root {
+        --forest: #0b3d2e;
+        --lime: #c6f36b;
+        --page: #f3f5ef;
+        --surface: #ffffff;
+        --ink: #0b1f17;
+        --muted: #3f5249;
+        --border: #c9d1c9;
+        --link: #0b3d2e;
+        color-scheme: light;
+      }
+      [data-theme='dark'] {
+        --page: #0b1410;
+        --surface: #121e19;
+        --ink: #e6eee8;
+        --muted: #9fb2a8;
+        --border: #2e4239;
+        --link: #c6f36b;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--ink);
+        font: 16px/1.6 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: var(--link);
+        text-underline-offset: 2px;
+      }
+      a:focus-visible {
+        outline: 2px solid var(--lime);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+      header {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+      }
+      .bar,
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding-inline: max(20px, env(safe-area-inset-left));
+      }
+      .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-block: 14px;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--ink);
+        font: 600 20px 'Space Grotesk', 'Inter', sans-serif;
+        letter-spacing: -0.02em;
+        text-decoration: none;
+      }
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: var(--forest);
+        color: var(--lime);
+      }
+      .mark svg {
+        width: 28px;
+        height: 28px;
+      }
+      .back {
+        font-size: 15px;
+        font-weight: 500;
+      }
+      main {
+        padding-block: 36px 64px;
+      }
+      h1,
+      h2 {
+        font-family: 'Space Grotesk', 'Inter', sans-serif;
+        letter-spacing: -0.01em;
+        line-height: 1.25;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 34px;
+        font-weight: 600;
+      }
+      h2 {
+        margin: 36px 0 8px;
+        font-size: 21px;
+        font-weight: 600;
+      }
+      .updated {
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .lead {
+        font-size: 18px;
+      }
+      ul {
+        padding-left: 1.2em;
+      }
+      li + li {
+        margin-top: 6px;
+      }
+      .services {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 15px;
+      }
+      .services th,
+      .services td {
+        padding: 10px 12px 10px 0;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+      .services th {
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .note {
+        color: var(--muted);
+        font-size: 15px;
+      }
+      code {
+        font-size: 0.9em;
+      }
+      @media (max-width: 575.98px) {
+        h1 {
+          font-size: 28px;
+        }
+        .services th {
+          white-space: normal;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="bar">
+        <a class="brand" href="/">
+          <span class="mark" aria-hidden="true">
+            <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M50 9v11M50 80v11" />
+              <path d="M64 36A14 14 0 1 0 50 50A14 14 0 1 1 36 64" />
+              <path d="M29 71l7-7 7 7" />
+              <circle cx="64" cy="36" r="7.5" fill="currentColor" stroke="none" />
+            </svg>
+          </span>
+          Spendora
+        </a>
+        <a class="back" href="/">Back to the app</a>
+      </div>
+    </header>
+
+    <main>
+      <h1>Privacy</h1>
+      <p class="updated">Last updated 18 November 2026</p>
+
+      <p class="lead">
+        Spendora is a personal expense tracker. This page explains in plain words what it stores
+        about you, where it’s kept, and how to remove it.
+      </p>
+
+      <h2>What Spendora stores</h2>
+      <ul>
+        <li>
+          <strong>Your entries</strong> – for each expense or income: the amount, date, category,
+          title and note you give it. Also the monthly budgets you set.
+        </li>
+        <li>
+          <strong>An account ID</strong> – a code from the login service (for example
+          <code>google-oauth2|1048…</code>) that ties your entries to your account.
+        </li>
+      </ul>
+      <p>
+        That’s all. Spendora’s database doesn’t hold your name, email address, photo or password.
+      </p>
+
+      <h2>Your login</h2>
+      <p>
+        Logging in is handled by <a href="https://www.okta.com/privacy-policy/">Auth0</a> (part of Okta).
+        Auth0 keeps your email address, your name and profile photo, and – if you log in with email
+        – your password, which Spendora never sees. If you choose “Continue with Google”, Google
+        tells Auth0 who you are; Spendora gets no access to your Google account. The app shows your
+        name, email and photo from your login; it doesn’t copy them anywhere.
+      </p>
+
+      <h2>Where your data lives</h2>
+      <p>Spendora runs on these services. Each one handles data only to run its part of the app.</p>
+      <table class="services">
+        <tbody>
+          <tr>
+            <th scope="row"><a href="https://www.databricks.com/legal/privacynotice">Neon</a></th>
+            <td>The database with your entries and budgets. (Neon is part of Databricks.)</td>
+          </tr>
+          <tr>
+            <th scope="row"><a href="https://render.com/privacy">Render</a></th>
+            <td>Runs the server that saves and loads your entries.</td>
+          </tr>
+          <tr>
+            <th scope="row"><a href="https://www.netlify.com/privacy/">Netlify</a></th>
+            <td>Delivers the app’s files to your browser.</td>
+          </tr>
+          <tr>
+            <th scope="row"><a href="https://www.okta.com/privacy-policy/">Auth0</a></th>
+            <td>Login and your account details.</td>
+          </tr>
+          <tr>
+            <th scope="row"><a href="https://policies.google.com/privacy">Google</a></th>
+            <td>
+              “Continue with Google”, if you use it. The app’s fonts also come from Google Fonts,
+              so Google sees your IP address when they download.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">
+        Like any website, these services record technical details such as IP addresses in their
+        logs, for security and to keep things running.
+      </p>
+
+      <h2>On your device</h2>
+      <ul>
+        <li>
+          Your browser keeps your login (so you stay logged in), your currency and light/dark
+          choice, and which tips you’ve dismissed. The installed app also keeps its own files so it
+          opens offline. Logging out ends the login; clearing the site’s data removes the rest.
+        </li>
+        <li>
+          CSV imports and PDF reports are made in your browser. An imported file isn’t uploaded –
+          only the rows you choose to import are saved.
+        </li>
+      </ul>
+
+      <h2>What Spendora doesn’t do</h2>
+      <ul>
+        <li>No ads, no analytics, no tracking.</li>
+        <li>Your data is never sold or shared for anyone else’s use.</li>
+        <li>No other Spendora user can see your entries.</li>
+      </ul>
+
+      <h2>Keeping it safe</h2>
+      <p>
+        Everything travels over encrypted connections (HTTPS). Every request to the server carries
+        a short-lived login token, which the server checks, and every database query is limited to
+        your own account.
+      </p>
+
+      <h2>Your choices</h2>
+      <ul>
+        <li>See, change or delete any entry or budget in the app, at any time.</li>
+        <li>Download all your entries as a CSV file from the Transactions panel.</li>
+        <li>
+          To delete your account and everything in it, email
+          <!-- CHANGE: the address people should write to. -->
+          <a href="mailto:privacy@example.com">privacy@example.com</a>. Your entries and budgets
+          are deleted from the database and your Auth0 account is removed. The database provider’s
+          short restore history may hold a copy for a few days more, until it expires.
+        </li>
+      </ul>
+
+      <h2>Changes</h2>
+      <p>
+        If this page changes, the date at the top changes too. Questions:
+        <a href="mailto:privacy@example.com">privacy@example.com</a>.
+      </p>
+    </main>
+  </body>
+</html>

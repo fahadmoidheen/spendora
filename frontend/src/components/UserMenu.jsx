@@ -115,6 +115,9 @@ export default function UserMenu({ user, onLogout }) {
             <LogoutIcon />
             Log out
           </button>
+          <a className="user-menu-link" href="/privacy.html">
+            Privacy
+          </a>
         </div>
       )}
     </div>

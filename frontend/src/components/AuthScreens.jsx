@@ -55,7 +55,8 @@ export function SignInScreen({ error, onGoogle, onEmail }) {
       </div>
 
       <p className="auth-foot">
-        Login is handled by Auth0. Spendora never sees your password.
+        Login is handled by Auth0. Spendora never sees your password.{' '}
+        <a href="/privacy.html">Privacy</a>
       </p>
     </AuthCard>
   )

@@ -55,9 +55,10 @@ const pwa = VitePWA({
     globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
     cleanupOutdatedCaches: true,
     // Any page address (including Auth0's /?code=... return) opens the app;
-    // API calls are never answered from the cache.
+    // API calls are never answered from the cache, and the privacy page
+    // (public/privacy.html) is its own page, not the app.
     navigateFallback: '/index.html',
-    navigateFallbackDenylist: [/^\/api\//],
+    navigateFallbackDenylist: [/^\/api\//, /^\/privacy/],
     runtimeCaching: [
       {
         urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith('/api/'),

@@ -1,0 +1,42 @@
+# Render Blueprint: the Spendora API (backend/) as a web service.
+#
+# Render reads this file when you choose New -> Blueprint and connect this
+# repository. Values marked `sync: false` are asked for in Render's
+# dashboard and never stored in Git. See README "Deploy".
+
+services:
+  - type: web
+    name: spendora-api
+    runtime: python
+    plan: free
+    # Use the region closest to you, and put the Neon database in the same
+    # one: every API call makes a few database queries, and each of them
+    # crosses between the two. Pairs: oregon = Neon "US West 2 (Oregon)",
+    # virginia = "US East 1", frankfurt = "Europe Central 1",
+    # singapore = "Asia Pacific 1 (Singapore)".
+    region: oregon
+    rootDir: backend
+    # Deploy a push only once its GitHub checks (.github/workflows/checks.yml)
+    # have passed, so a commit that breaks the tests never goes live.
+    autoDeployTrigger: checksPass
+    buildCommand: pip install -r requirements.txt
+    # Bring the database tables up to date, then start the production
+    # server. Render sets $PORT. (Render's separate pre-deploy step isn't on
+    # the free plan, so the migration runs here.)
+    startCommand: flask db upgrade && gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --access-logfile -
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.5
+      - key: APP_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      # Neon's connection string (postgresql://...?sslmode=require).
+      - key: DATABASE_URL
+        sync: false
+      # Your Auth0 tenant, e.g. your-tenant.us.auth0.com
+      - key: AUTH0_DOMAIN
+        sync: false
+      # The Auth0 API identifier (README "Login").
+      - key: AUTH0_AUDIENCE
+        value: https://api.spendora

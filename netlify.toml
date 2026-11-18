@@ -1,0 +1,43 @@
+# Netlify: the Spendora web app (frontend/). See README "Deploy".
+#
+# Netlify runs the build on every push and serves the result from its CDN.
+# The VITE_AUTH0_* values are set in Netlify's dashboard, not here: Vite
+# copies them into the JavaScript at build time.
+
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"          # relative to base
+
+[build.environment]
+  NODE_VERSION = "24"
+
+# API calls go to the Flask API on Render. Status 200 makes this a proxy,
+# not a redirect: the browser only ever sees this site's address, so the
+# app's relative /api/... calls work unchanged and no CORS is needed.
+# CHANGE the address to your Render service's URL.
+[[redirects]]
+  from = "/api/*"
+  to = "https://spendora-api.onrender.com/api/:splat"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
+
+# The service worker decides when users get a new version, so the browser
+# must always check it with the server.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# Vite puts a content hash in every file name under /assets, so a changed
+# file always has a new name - these can be cached for a year.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
