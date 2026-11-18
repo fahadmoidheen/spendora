@@ -71,6 +71,25 @@ export const ReceiptIcon = () => (
   <PathIcon d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z M9 8h6 M9 12h6 M9 16h3" />
 )
 
+// CSV import / export.
+export const UploadIcon = () => <PathIcon d="M12 15V4 M7 9l5-5 5 5 M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" />
+export const DownloadIcon = () => <PathIcon d="M12 4v11 M7 10l5 5 5-5 M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" />
+export const FileTextIcon = () => (
+  <PathIcon d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z M14 3v5h5 M9 13h6 M9 17h6" />
+)
+
+// Heads-up panel: budget warnings and tips.
+export const AlertTriangleIcon = () => <PathIcon d="M12 4l9 16H3z M12 10v4 M12 17h.01" />
+export const AlertCircleIcon = () => (
+  <PathIcon d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 8v5 M12 16h.01" />
+)
+export const TrendUpIcon = () => <PathIcon d="M3 17l6-6 4 4 8-8 M15 7h6v6" />
+export const TrendDownIcon = () => <PathIcon d="M3 7l6 6 4-4 8 8 M15 17h6v-6" />
+export const RepeatIcon = () => (
+  <PathIcon d="M17 2l4 4-4 4 M3 11V9a3 3 0 0 1 3-3h15 M7 22l-4-4 4-4 M21 13v2a3 3 0 0 1-3 3H3" />
+)
+export const GaugeIcon = () => <PathIcon d="M4.5 18a9 9 0 1 1 15 0 M12 14l4-5" />
+
 export function CategoryIcon({ name }) {
   return <PathIcon d={categoryIcon(name)} />
 }

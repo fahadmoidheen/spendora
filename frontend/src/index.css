@@ -6,7 +6,13 @@
    2. Base and layout             7. Expense list and breakdown
    3. Panels and notices          8. Empty states
    4. Buttons                     9. Income, budgets, currency
-   5. Inputs, chips, date picker 10. Dropdowns                         */
+   5. Inputs, chips, date picker 10. Dropdowns
+                                 11. Login screens and account menu
+                                 12. Phones and the installed app (PWA)
+                                 13. Insights charts
+                                 14. Heads-up panel and budget alerts
+                                 15. CSV import and export
+                                 16. PDF report and printing           */
 
 /* 1. Tokens ------------------------------------------------------------ */
 
@@ -1698,6 +1704,18 @@ textarea.form-control {
   color: var(--muted);
 }
 
+.auth-foot a,
+.user-menu-link {
+  color: var(--primary);
+  font-weight: 500;
+  text-underline-offset: 2px;
+}
+
+.user-menu-link {
+  align-self: center;
+  font-size: 13px;
+}
+
 .auth-steps {
   margin: 0;
   padding-left: 20px;
@@ -1838,5 +1856,1373 @@ textarea.form-control {
 @media (max-width: 419.98px) {
   .brand-wordmark {
     display: none;
+  }
+}
+
+/* 12. Phones and the installed app (PWA) --------------------------------
+   viewport-fit=cover (index.html) lets the page run under a phone's notch
+   and home bar; these rules keep content inside the safe areas. env()
+   values are 0 on screens without them, so desktop is unchanged. */
+
+body,
+.auth-screen {
+  /* dvh follows the visible height as mobile browser bars slide in/out. */
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app-header {
+  padding-top: env(safe-area-inset-top);
+}
+
+.app-container {
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+}
+
+.app-main {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom));
+}
+
+.auth-screen {
+  padding:
+    max(24px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
+}
+
+@media (max-width: 575.98px) {
+  .app-container {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+}
+
+/* Offline banner: neutral, not an error. */
+.notice-info {
+  background: var(--subtle);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* Floating add button (design kit "Floating · mobile"): phones and
+   tablets only, where the form sits below the list. */
+.fab {
+  position: fixed;
+  z-index: 45;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  display: none;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: var(--forest);
+  color: var(--lime);
+  box-shadow: 0 8px 20px rgba(11, 61, 46, 0.28);
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.15s;
+}
+
+.fab .icon {
+  width: 26px;
+  height: 26px;
+  stroke-width: 2.4;
+}
+
+.fab:hover {
+  background: var(--forest-hover);
+}
+
+.fab:active {
+  background: var(--forest-press);
+  transform: scale(0.96);
+}
+
+.fab:focus-visible {
+  outline: 0;
+  box-shadow: var(--focus-ring);
+}
+
+[data-bs-theme='dark'] .fab {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(198, 243, 107, 0.25);
+}
+
+@media (max-width: 991.98px) {
+  .fab {
+    display: grid;
+  }
+
+  /* Room below the last card so the button never covers a row. */
+  .app-main {
+    padding-bottom: calc(108px + env(safe-area-inset-bottom));
+  }
+}
+
+/* "New version ready" toast (components/UpdatePrompt.jsx). */
+.toast-bar {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  bottom: calc(24px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  width: min(440px, calc(100vw - 32px));
+  padding: 12px 12px 12px 18px;
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--hairline);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.toast-bar p {
+  margin: 0;
+}
+
+.toast-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* Phones: sit above the floating add button. */
+@media (max-width: 991.98px) {
+  .toast-bar {
+    bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+}
+
+/* 13. Insights charts ---------------------------------------------------
+   Colours follow the dataviz palette (validated for colour blindness in
+   both themes): fixed slots per category, money in = slot 3, money out =
+   slot 1, grey for "Other" and for context series. Read by
+   components/insights/useChartColors.js. */
+
+:root,
+[data-bs-theme='light'] {
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #6250d6;
+  --series-8: #e34948;
+  --series-muted: #c9d1c9;
+  --chart-in: var(--series-3);
+  --chart-out: var(--series-1);
+  --chart-last: #8a958e;
+  --chart-grid: #e7ece4;
+  --chart-axis: #c9d1c9;
+  --chart-text: #3f5249;
+}
+
+[data-bs-theme='dark'] {
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #0ca30c;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+  --series-muted: #3a4d44;
+  --chart-last: #7d8c84;
+  --chart-grid: #1f3029;
+  --chart-axis: #2e4239;
+  --chart-text: #9fb2a8;
+}
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.insights {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.insights-filters {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.insights-filters .select {
+  width: 220px;
+  max-width: 100%;
+}
+
+.insights-grid {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .insights-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .insights-grid .chart-wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.chart-card {
+  gap: 14px;
+  min-width: 0;
+}
+
+.chart-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chart-sub {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.chart-body {
+  min-width: 0;
+}
+
+.chart-body .recharts-wrapper,
+.chart-body .recharts-surface {
+  font-family: var(--font-body);
+  overflow: visible;
+}
+
+.chart-body .recharts-text {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Keyboard focus on the chart (Recharts' accessibility layer). */
+.chart-body .recharts-wrapper:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.chart-body .recharts-wrapper:focus:not(:focus-visible),
+.chart-body .recharts-surface:focus {
+  outline: none;
+}
+
+.chart-empty {
+  margin: 0;
+  padding: 40px 8px;
+  font-size: 14px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.chart-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-key {
+  flex: none;
+  display: inline-block;
+}
+
+.legend-key-box {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.legend-key-line {
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+/* Hover card */
+.chart-tooltip {
+  min-width: 160px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--hairline);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.chart-tooltip-heading {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.chart-tooltip ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chart-tooltip li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-tooltip strong {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-tooltip li span:last-child {
+  color: var(--muted);
+}
+
+.tooltip-key {
+  flex: none;
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+/* "View as table" - the no-hover way to read every value. */
+.chart-table {
+  border-top: 1px solid var(--hairline);
+  padding-top: 10px;
+}
+
+.chart-table summary {
+  width: fit-content;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.chart-table summary:focus-visible {
+  outline: 0;
+  border-radius: 6px;
+  box-shadow: var(--focus-ring-tight);
+}
+
+.table-view {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table-view th,
+.table-view td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--hairline);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.table-view thead th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.table-view th:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+.chart-table[open] {
+  overflow-x: auto;
+}
+
+/* Category split: a thin segmented bar above a ranked list. */
+.split-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.split-seg {
+  min-width: 2px;
+}
+
+.split-list {
+  display: grid;
+  gap: 2px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.split-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto 3.5em;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 14px;
+}
+
+.split-list li:last-child {
+  border-bottom: 0;
+}
+
+.split-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ink);
+}
+
+.split-name .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+.split-amount {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.split-share {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--muted);
+}
+
+/* 14. Heads-up panel and budget alerts ----------------------------------
+   Budgets use status colours - amber from 80%, red from 100% - and always
+   pair them with an icon and words. Tips stay neutral; only good news
+   ("below your usual") gets the income green. */
+
+:root,
+[data-bs-theme='light'] {
+  --warning: #b54708;
+  --warning-fill: #f79009;
+  --on-warning: #0b1f17;
+  --warning-soft: rgba(247, 144, 9, 0.12);
+  --good-soft: rgba(31, 122, 77, 0.1);
+}
+
+[data-bs-theme='dark'] {
+  --warning: #fdb022;
+  --warning-fill: #fdb022;
+  --on-warning: #0b1f17;
+  --warning-soft: rgba(253, 176, 34, 0.12);
+  --good-soft: rgba(127, 217, 159, 0.12);
+}
+
+.headsup {
+  gap: 14px;
+}
+
+.headsup-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 768px) {
+  .headsup-list {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+}
+
+.headsup-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 6px 12px 12px;
+  border-radius: 16px;
+  background: var(--surface-hover);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+.headsup-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--subtle);
+  color: var(--icon);
+}
+
+.headsup-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.headsup-text {
+  flex: 1;
+  min-width: 0;
+  padding-top: 1px;
+}
+
+.headsup-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+.headsup-detail {
+  margin: 2px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.headsup-item.is-danger {
+  background: var(--danger-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--danger) 28%, transparent);
+}
+
+.headsup-item.is-warning {
+  background: var(--warning-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning-fill) 35%, transparent);
+}
+
+.headsup-item.is-danger .headsup-title {
+  color: var(--danger);
+}
+
+.headsup-item.is-warning .headsup-title {
+  color: var(--warning);
+}
+
+.is-danger > .headsup-icon {
+  background: var(--danger);
+  color: var(--on-danger);
+}
+
+.is-warning > .headsup-icon {
+  background: var(--warning-fill);
+  color: var(--on-warning);
+}
+
+.is-good > .headsup-icon {
+  background: var(--good-soft);
+  color: var(--income);
+}
+
+/* Save-time budget notice: the update toast's shape, with a status icon. */
+.toast-alert {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 12px;
+  padding-left: 12px;
+}
+
+.toast-alert p {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.toast-alert strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Budgets card: amber bar from 80%, red from 100% (BudgetsCard.jsx). */
+.breakdown-pct.is-warning {
+  color: var(--warning);
+}
+
+.bar-fill.is-warning {
+  background: var(--warning-fill);
+}
+
+/* 15. CSV import and export ----------------------------------------------
+   Import / Export sit in the Transactions panel head; the import dialog is
+   a native <dialog> (focus trap, Escape and backdrop come with it). Phones
+   get it full screen. */
+
+.panel-tools {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.field-note.is-warning {
+  color: var(--warning);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(880px, calc(100vw - 32px));
+  max-width: none;
+  max-height: min(92vh, 1000px);
+  padding: 0;
+  border: 0;
+  border-radius: 24px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-pop), inset 0 0 0 1px var(--hairline);
+}
+
+.sheet:not([open]) {
+  display: none;
+}
+
+.sheet::backdrop {
+  background: rgba(11, 31, 23, 0.45);
+}
+
+[data-bs-theme='dark'] .sheet::backdrop {
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 16px 24px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sheet-head .panel-sub {
+  display: block;
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.sheet-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+/* Step 1: pick a file. */
+.import-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 40px 20px;
+  border: 1.5px dashed var(--border);
+  border-radius: 20px;
+  background: var(--page);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.import-drop:hover,
+.import-drop.is-dragging {
+  border-color: var(--primary);
+  background: var(--surface-hover);
+}
+
+.import-drop:has(input:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+
+.import-drop-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 6px;
+  border-radius: 16px;
+  background: var(--forest);
+  color: var(--lime);
+}
+
+.import-drop-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.import-drop-text {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Step 2: columns, then the rows. */
+.import-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.import-columns-head,
+.import-review-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.import-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.import-columns .segmented {
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.import-review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--hairline);
+}
+
+.import-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 12px;
+  cursor: pointer;
+}
+
+.import-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.import-summary .is-problem {
+  color: var(--danger);
+}
+
+.import-check {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.import-check:disabled {
+  cursor: not-allowed;
+}
+
+.import-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.import-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 170px 110px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+}
+
+.import-row + .import-row {
+  border-top: 1px solid var(--hairline);
+}
+
+.import-row.is-off .import-main,
+.import-row.is-off .import-amount {
+  opacity: 0.55;
+}
+
+.import-main {
+  min-width: 0;
+}
+
+.import-title {
+  margin: 0;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.import-muted {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.import-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.import-tag {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--subtle);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.import-tag.is-problem {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.import-income-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--good-soft);
+  color: var(--income);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.import-amount {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.import-amount.is-income {
+  color: var(--income);
+}
+
+.import-more {
+  align-self: center;
+}
+
+/* Small dropdown for one row's category. */
+.select-compact .select-trigger {
+  min-height: 38px;
+  padding: 0 8px 0 10px;
+  border-radius: 11px;
+  font-size: 14px;
+}
+
+.select-compact .select-value .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.sheet-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 24px 20px;
+  border-top: 1px solid var(--hairline);
+}
+
+.sheet-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 767.98px) {
+  .sheet {
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .sheet-head {
+    padding: calc(16px + env(safe-area-inset-top)) 12px 12px 16px;
+  }
+
+  .sheet-body {
+    padding: 16px;
+  }
+
+  .sheet-foot {
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
+  }
+
+  .sheet-actions .btn {
+    flex: 1;
+  }
+
+  /* Row: tick, text and amount on top, category underneath. */
+  .import-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'check main amount'
+      '. category category';
+    padding: 10px 4px;
+  }
+
+  .import-row > .import-check {
+    grid-area: check;
+  }
+
+  .import-main {
+    grid-area: main;
+  }
+
+  .import-amount {
+    grid-area: amount;
+  }
+
+  .import-category {
+    grid-area: category;
+  }
+
+  .import-columns .segment {
+    padding: 0 10px;
+    font-size: 13px;
+  }
+}
+
+/* 16. PDF report and printing ---------------------------------------------
+   components/MoneyReport.jsx. The report is a light A4 page in both
+   themes (it sets its own light tokens). When printing, only #print-root
+   (a copy of the report on <body>) is shown. */
+
+.report {
+  --ink: #0b1f17;
+  --muted: #3f5249;
+  --border: #c9d1c9;
+  --hairline: #e7ece4;
+  --subtle: #e7ece4;
+  --income: #1f7a4d;
+  --danger: #b42318;
+  --warning-fill: #f79009;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  background: #ffffff;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.45;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.report p,
+.report h1,
+.report h2 {
+  margin: 0;
+}
+
+.report-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 14px;
+  border-bottom: 2px solid var(--forest);
+}
+
+.report-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.report-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--forest);
+  color: var(--lime);
+}
+
+.report-mark .logo-mark {
+  width: 26px;
+  height: 26px;
+}
+
+.report-wordmark {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.report-kicker {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-align: right;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.report-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: right;
+}
+
+.report-meta {
+  margin-top: 10px !important;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.report-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+  break-inside: avoid;
+}
+
+.report-total {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f3f5ef;
+}
+
+.report-total-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.report-total-value {
+  margin: 4px 0 2px !important;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.report-total-note {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.report-total.is-net {
+  background: var(--forest);
+  color: #ffffff;
+}
+
+.report-total.is-net .report-total-label,
+.report-total.is-net .report-total-note {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.report-total.is-net .report-total-value {
+  color: var(--lime);
+}
+
+.report-total.is-net.is-negative .report-total-value {
+  color: #ffb4ab;
+}
+
+.report-section {
+  margin-top: 26px;
+}
+
+.report-section h2 {
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  break-after: avoid;
+}
+
+.report-count {
+  margin-left: 4px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-table th {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.report-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: top;
+}
+
+.report-table tr {
+  break-inside: avoid;
+}
+
+.report-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.report-table tfoot td {
+  border-top: 1px solid var(--border);
+  border-bottom: 0;
+  font-weight: 600;
+}
+
+.report-share-head {
+  width: 34%;
+}
+
+.report-share {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-bar {
+  flex: 1;
+  min-width: 60px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--subtle);
+}
+
+.report-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--forest);
+}
+
+.report-bar.is-warning > span {
+  background: var(--warning-fill);
+}
+
+.report-bar.is-danger > span {
+  background: var(--danger);
+}
+
+.report-share-pct {
+  width: 36px;
+  text-align: right;
+}
+
+.report-over {
+  color: var(--danger);
+}
+
+.report-income {
+  color: var(--income);
+}
+
+.report-note {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.report-tx-date {
+  width: 76px;
+  white-space: nowrap;
+}
+
+.report-tx-category {
+  width: 110px;
+}
+
+.report-tx-amount {
+  width: 110px;
+}
+
+.report-table .report-month-row th {
+  padding-top: 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+  break-after: avoid;
+}
+
+.report-empty {
+  margin-top: 26px !important;
+  padding: 24px;
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.report-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+/* The dialog: period controls, then the report on a grey "desk". */
+.report-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+
+.report-preview {
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--subtle);
+}
+
+.report-preview .report {
+  padding: 40px 44px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(11, 31, 23, 0.14);
+}
+
+/* Phones: show the page shrunk to fit, as it will print. */
+@media (max-width: 767.98px) {
+  .report-preview {
+    padding: 12px;
+    overflow-x: auto;
+  }
+
+  .report-preview .report {
+    width: 760px;
+    max-width: none;
+    zoom: 0.7;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .report-preview .report {
+    zoom: 0.42;
+  }
+}
+
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 13mm 16mm;
+
+    @bottom-right {
+      content: 'Page ' counter(page) ' of ' counter(pages);
+      font-family: 'Inter', sans-serif;
+      font-size: 8pt;
+      color: #6b7a72;
+    }
+  }
+
+  /* Dark mode sets color-scheme: dark, which would paint the page
+     margins dark. Paper is always white. */
+  :root,
+  [data-bs-theme] {
+    color-scheme: light !important;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  body > :not(#print-root),
+  dialog,
+  dialog::backdrop {
+    display: none !important;
+  }
+
+  #print-root {
+    display: block;
+  }
+
+  #print-root .report {
+    max-width: none;
   }
 }

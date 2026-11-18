@@ -33,6 +33,12 @@ export function updateExpense(id, values) {
   return request(`${BASE}/${id}`, { method: 'PUT', body: toPayload(values) })
 }
 
+// CSV import: entries already in API shape (utils/csvImport.js
+// toImportPayload). All or nothing. Resolves to { created, entries }.
+export function importExpenses(entries) {
+  return request(`${BASE}/import`, { method: 'POST', body: { entries } })
+}
+
 export function deleteExpense(id) {
   return request(`${BASE}/${id}`, { method: 'DELETE' })
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CATEGORIES } from '../constants'
 import { sanitizeAmount, useMoney } from '../currency'
+import { levelOf } from '../utils/budgetAlerts'
 import { currentMonthKey, formatMonth } from '../utils/format'
 import { spentByCategory } from '../utils/transactions'
 import { amountError } from '../utils/validate'
@@ -97,7 +98,7 @@ function BudgetForm({ budget, categories, onSave, onCancel }) {
 }
 
 // The design's Budgets card: this month's spending against each limit.
-// Bars turn red at 90%.
+// Bars turn amber at 80% and red at 100%, matching the Heads-up panel.
 export default function BudgetsCard({ budgets, expenses, onSave, onDelete }) {
   const money = useMoney()
   // null, "new", or the id of the budget being edited
@@ -113,7 +114,13 @@ export default function BudgetsCard({ budgets, expenses, onSave, onDelete }) {
     .map((b) => {
       const limit = toCents(b.monthly_limit)
       const used = spentBy[b.category] ?? 0
-      return { ...b, limit, used, pct: Math.round((used / limit) * 100) }
+      return {
+        ...b,
+        limit,
+        used,
+        pct: Math.round((used / limit) * 100),
+        level: levelOf(used / limit),
+      }
     })
     .sort((a, b) => b.pct - a.pct) // closest to the limit first
 
@@ -156,7 +163,7 @@ export default function BudgetsCard({ budgets, expenses, onSave, onDelete }) {
                 </li>
               )
             }
-            const danger = b.pct >= 90
+            const tone = { over: ' is-danger', warning: ' is-warning' }[b.level] ?? ''
             return (
               <li key={b.id}>
                 <div className="breakdown-top">
@@ -165,9 +172,10 @@ export default function BudgetsCard({ budgets, expenses, onSave, onDelete }) {
                     <p className="breakdown-name">{b.category}</p>
                     <p className="breakdown-detail">
                       {money.format(b.used)} of {money.format(b.limit)}
+                      {b.used > b.limit && ` · ${money.format(b.used - b.limit)} over`}
                     </p>
                   </div>
-                  <p className={`breakdown-pct${danger ? ' is-danger' : ''}`}>{b.pct}%</p>
+                  <p className={`breakdown-pct${tone}`}>{b.pct}%</p>
                   <div className="row-actions">
                     {confirmingId === b.id ? (
                       <>
@@ -222,7 +230,7 @@ export default function BudgetsCard({ budgets, expenses, onSave, onDelete }) {
                   aria-valuemax={100}
                 >
                   <div
-                    className={`bar-fill${danger ? ' is-danger' : ''}`}
+                    className={`bar-fill${tone}`}
                     style={{ width: `${Math.min(b.pct, 100)}%` }}
                   />
                 </div>

@@ -49,6 +49,17 @@ export function makeMoney(code) {
   const symbol =
     formatter.formatToParts(0).find((part) => part.type === 'currency')?.value ?? code
   const format = (cents) => formatter.format(Math.abs(cents) / 100)
+  const whole = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: code,
+    maximumFractionDigits: 0,
+  })
+  const compact = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: code,
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  })
 
   return {
     code,
@@ -61,6 +72,13 @@ export function makeMoney(code) {
     formatSigned: (cents, direction) => `${direction < 0 ? MINUS : '+'}${format(cents)}`,
     // "$12.00" or "−$12.00" - for a net figure that can go negative
     formatNet: (cents) => (cents < 0 ? MINUS : '') + format(cents),
+    // "$1,235" - rounded, for estimates ("about $180")
+    formatWhole: (cents) => whole.format(Math.abs(cents) / 100),
+    // Chart axis ticks: "$800", "$2,500", then "$12K" from 10,000 up.
+    formatAxis: (cents) => {
+      const value = Math.abs(cents) / 100
+      return value < 10_000 ? whole.format(value) : compact.format(value)
+    },
   }
 }
 

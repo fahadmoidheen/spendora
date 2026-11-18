@@ -1,5 +1,5 @@
 import { useAuth0 } from '@auth0/auth0-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createBudget, deleteBudget, listBudgets, updateBudget } from './api/budgets'
 import {
   createExpense,
@@ -8,17 +8,31 @@ import {
   updateExpense,
 } from './api/expenses'
 import BudgetsCard from './components/BudgetsCard'
+import BudgetToast from './components/BudgetToast'
 import CategoryBreakdown from './components/CategoryBreakdown'
 import CurrencySelect from './components/CurrencySelect'
 import ExpenseFilters from './components/ExpenseFilters'
 import ExpenseForm from './components/ExpenseForm'
 import ExpenseList from './components/ExpenseList'
-import { CloseIcon, LogoMark, PlusIcon } from './components/Icons'
+import HeadsUp from './components/HeadsUp'
+import {
+  CloseIcon,
+  DownloadIcon,
+  FileTextIcon,
+  LogoMark,
+  PlusIcon,
+  UploadIcon,
+} from './components/Icons'
+import ImportDialog from './components/ImportDialog'
+import ReportDialog from './components/ReportDialog'
 import Segmented from './components/Segmented'
 import SummaryCards from './components/SummaryCards'
 import ThemeToggle from './components/ThemeToggle'
 import UserMenu from './components/UserMenu'
 import { loadCurrency, makeMoney, MoneyContext, saveCurrency } from './currency'
+import { useOnlineStatus } from './useOnlineStatus'
+import { newlyCrossed } from './utils/budgetAlerts'
+import { downloadCsv, entriesToCsv } from './utils/csv'
 import { currentMonthKey, formatMonth, monthKey, toCents } from './utils/format'
 
 const EMPTY_FILTERS = { type: 'all', search: '', category: '', month: '', sort: 'newest' }
@@ -28,6 +42,24 @@ const TYPE_FILTERS = [
   { value: 'expense', label: 'Expenses' },
   { value: 'income', label: 'Income' },
 ]
+
+const VIEWS = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'insights', label: 'Insights' },
+]
+
+// The charts library is big, so Insights loads only when first opened.
+const InsightsView = lazy(() => import('./components/insights/InsightsView'))
+
+function Spinner() {
+  return (
+    <div className="empty-inline">
+      <div className="spinner-border" role="status">
+        <span className="visually-hidden">Loading…</span>
+      </div>
+    </div>
+  )
+}
 
 // Ties on date fall back to id, so newer entries for the same day come first.
 const SORTERS = {
@@ -53,7 +85,7 @@ function applyFilters(entries, { type, search, category, month, sort }) {
 }
 
 // Shown when there is nothing at all yet (the design's empty card).
-function FirstEntryPrompt({ onAdd }) {
+function FirstEntryPrompt({ onAdd, onImport }) {
   return (
     <div className="empty-card">
       <span className="empty-mark" aria-hidden="true">
@@ -63,10 +95,16 @@ function FirstEntryPrompt({ onAdd }) {
       <p className="empty-text">
         Add your first expense or income to see where your money flows.
       </p>
-      <button type="button" className="btn btn-accent" onClick={onAdd}>
-        <PlusIcon />
-        Add expense
-      </button>
+      <div className="empty-actions">
+        <button type="button" className="btn btn-accent" onClick={onAdd}>
+          <PlusIcon />
+          Add expense
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={onImport}>
+          <UploadIcon />
+          Import a CSV
+        </button>
+      </div>
     </div>
   )
 }
@@ -78,12 +116,19 @@ export default function App() {
   const [status, setStatus] = useState('loading') // loading | ready | error
   const [loadError, setLoadError] = useState(null)
   const [error, setError] = useState('')
+  const online = useOnlineStatus()
   const [editing, setEditing] = useState(null)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
+  const [view, setView] = useState('overview') // overview | insights
   const [currency, setCurrency] = useState(loadCurrency)
+  const [budgetToast, setBudgetToast] = useState(null)
+  const [importing, setImporting] = useState(false)
+  const [reporting, setReporting] = useState(false)
+  const [notice, setNotice] = useState('')
   const formRef = useRef(null)
 
   const money = useMemo(() => makeMoney(currency), [currency])
+  const closeBudgetToast = useCallback(() => setBudgetToast(null), [])
 
   useEffect(() => {
     let cancelled = false
@@ -133,9 +178,11 @@ export default function App() {
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  // "Add expense" buttons: leave edit mode, bring the form into view and
-  // put the cursor in Amount. Waits a frame for the form to remount.
+  // "Add expense" buttons: leave edit mode (and Insights), bring the form
+  // into view and put the cursor in Amount. Waits a frame for the form to
+  // (re)mount.
   function startAdding() {
+    setView('overview')
     setEditing(null)
     requestAnimationFrame(() => {
       scrollToForm()
@@ -148,15 +195,29 @@ export default function App() {
     requestAnimationFrame(scrollToForm)
   }
 
+  // After saving, pop a notice if the entry pushed a budget past 80% or 100%.
   async function handleSave(values) {
+    let next
     if (editing) {
       const updated = await updateExpense(editing.id, values)
-      setExpenses((list) => list.map((e) => (e.id === updated.id ? updated : e)))
+      next = expenses.map((e) => (e.id === updated.id ? updated : e))
       setEditing(null)
     } else {
       const created = await createExpense(values)
-      setExpenses((list) => [...list, created])
+      next = [...expenses, created]
     }
+    setExpenses(next)
+    const crossed = newlyCrossed(budgets, expenses, next)
+    if (crossed) setBudgetToast(crossed)
+  }
+
+  function handleImported(created) {
+    const next = [...expenses, ...created]
+    setExpenses(next)
+    setImporting(false)
+    setNotice(`Imported ${created.length} ${created.length === 1 ? 'entry' : 'entries'}.`)
+    const crossed = newlyCrossed(budgets, expenses, next)
+    if (crossed) setBudgetToast(crossed)
   }
 
   async function handleDelete(id) {
@@ -215,7 +276,7 @@ export default function App() {
       />
     )
   } else if (expenses.length === 0) {
-    listContent = <FirstEntryPrompt onAdd={startAdding} />
+    listContent = <FirstEntryPrompt onAdd={startAdding} onImport={() => setImporting(true)} />
   } else {
     listContent = (
       <div className="empty-inline">
@@ -249,6 +310,11 @@ export default function App() {
       </header>
 
       <main className="app-container app-main">
+        {!online && (
+          <div className="notice notice-info" role="status">
+            <p>You’re offline — changes can’t be saved until you reconnect.</p>
+          </div>
+        )}
         {status === 'error' && (
           <div className="notice notice-danger" role="alert">
             <p>Could not load your data. {loadError?.message}</p>
@@ -257,6 +323,19 @@ export default function App() {
                 Log in again
               </button>
             )}
+          </div>
+        )}
+        {notice && (
+          <div className="notice notice-info" role="status">
+            <p>{notice}</p>
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon btn-icon-sm"
+              aria-label="Dismiss"
+              onClick={() => setNotice('')}
+            >
+              <CloseIcon />
+            </button>
           </div>
         )}
         {error && (
@@ -278,67 +357,150 @@ export default function App() {
             <p className="page-eyebrow">{formatMonth(currentMonthKey())}</p>
             <h1 className="page-title">Your money flow</h1>
           </div>
-          <button type="button" className="btn btn-accent" onClick={startAdding}>
-            <PlusIcon />
-            Add expense
-          </button>
+          <div className="page-actions">
+            <Segmented
+              name="view"
+              label="View"
+              options={VIEWS}
+              value={view}
+              onChange={setView}
+            />
+            <button type="button" className="btn btn-accent" onClick={startAdding}>
+              <PlusIcon />
+              Add expense
+            </button>
+          </div>
         </div>
 
-        <SummaryCards expenses={expenses} budgets={budgets} />
+        {view === 'insights' ? (
+          status === 'ready' ? (
+            <Suspense fallback={<Spinner />}>
+              <InsightsView expenses={expenses} />
+            </Suspense>
+          ) : status === 'loading' ? (
+            <Spinner />
+          ) : null
+        ) : (
+          <>
+            {status === 'ready' && (
+              <HeadsUp budgets={budgets} expenses={expenses} userId={user?.sub} />
+            )}
+            <SummaryCards expenses={expenses} budgets={budgets} />
 
-        <div className="layout">
-          <section className="panel layout-main" aria-labelledby="transactions-title">
-            <div className="panel-head">
-              <div className="panel-head-text">
-                <h2 id="transactions-title" className="panel-title">
-                  Transactions
-                </h2>
-                <span className="panel-sub">
-                  {filtersActive
-                    ? `${shown.length} of ${expenses.length}`
-                    : `${expenses.length} total`}
-                  {filtersActive && (
+            <div className="layout">
+              <section className="panel layout-main" aria-labelledby="transactions-title">
+                <div className="panel-head">
+                  <div className="panel-head-text">
+                    <h2 id="transactions-title" className="panel-title">
+                      Transactions
+                    </h2>
+                    <span className="panel-sub">
+                      {filtersActive
+                        ? `${shown.length} of ${expenses.length}`
+                        : `${expenses.length} total`}
+                      {filtersActive && (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm"
+                          onClick={clearFilters}
+                        >
+                          Clear filters
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                  <div className="panel-tools">
                     <button
                       type="button"
                       className="btn btn-ghost btn-sm"
-                      onClick={clearFilters}
+                      onClick={() => setImporting(true)}
+                      disabled={status !== 'ready'}
                     >
-                      Clear filters
+                      <UploadIcon />
+                      Import
                     </button>
-                  )}
-                </span>
-              </div>
-              <Segmented
-                name="type-filter"
-                label="Show"
-                options={TYPE_FILTERS}
-                value={filters.type}
-                onChange={(type) => setFilters((f) => ({ ...f, type }))}
-              />
-            </div>
-            <ExpenseFilters filters={filters} months={months} onChange={setFilters} />
-            {listContent}
-          </section>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => downloadCsv(entriesToCsv(expenses))}
+                      disabled={expenses.length === 0}
+                      title="Download every entry as a CSV file"
+                    >
+                      <DownloadIcon />
+                      CSV
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setReporting(true)}
+                      disabled={expenses.length === 0}
+                      title="Save a report as a PDF"
+                    >
+                      <FileTextIcon />
+                      PDF
+                    </button>
+                  </div>
+                  <Segmented
+                    name="type-filter"
+                    label="Show"
+                    options={TYPE_FILTERS}
+                    value={filters.type}
+                    onChange={(type) => setFilters((f) => ({ ...f, type }))}
+                  />
+                </div>
+                <ExpenseFilters filters={filters} months={months} onChange={setFilters} />
+                {listContent}
+              </section>
 
-          <div className="layout-side">
-            <div ref={formRef} className="scroll-target">
-              <ExpenseForm
-                key={editing?.id ?? 'new'}
-                editing={editing}
-                onSave={handleSave}
-                onCancel={() => setEditing(null)}
-              />
+              <div className="layout-side">
+                <div ref={formRef} className="scroll-target">
+                  <ExpenseForm
+                    key={editing?.id ?? 'new'}
+                    editing={editing}
+                    onSave={handleSave}
+                    onCancel={() => setEditing(null)}
+                  />
+                </div>
+                <BudgetsCard
+                  budgets={budgets}
+                  expenses={expenses}
+                  onSave={handleSaveBudget}
+                  onDelete={handleDeleteBudget}
+                />
+                <CategoryBreakdown expenses={shown} label={breakdownLabel} />
+              </div>
             </div>
-            <BudgetsCard
-              budgets={budgets}
-              expenses={expenses}
-              onSave={handleSaveBudget}
-              onDelete={handleDeleteBudget}
-            />
-            <CategoryBreakdown expenses={shown} label={breakdownLabel} />
-          </div>
-        </div>
+          </>
+        )}
       </main>
+
+      {/* Phones and tablets: the design kit's floating add button, so
+          adding an entry never needs a scroll up to the form. */}
+      <button type="button" className="fab" aria-label="Add expense" onClick={startAdding}>
+        <PlusIcon />
+      </button>
+
+      {importing && (
+        <ImportDialog
+          existing={expenses}
+          onClose={() => setImporting(false)}
+          onImported={handleImported}
+        />
+      )}
+
+      {reporting && (
+        <ReportDialog
+          entries={expenses}
+          budgets={budgets}
+          user={user}
+          onClose={() => setReporting(false)}
+        />
+      )}
+
+      {/* Always mounted, so screen readers announce the notice when it appears. */}
+      <div role="status" aria-live="polite">
+        {budgetToast && <BudgetToast alert={budgetToast} onClose={closeBudgetToast} />}
+      </div>
     </MoneyContext.Provider>
   )
 }

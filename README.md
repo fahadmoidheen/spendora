@@ -192,6 +192,179 @@ Node: allow it on **Private** networks and set your home Wi-Fi to
 Private. If your PC's address changes (it can when Wi-Fi reconnects),
 repeat step 2 with the new one.
 
+## Install on your phone (PWA)
+
+Spendora is an installable web app (a PWA): from the browser you can add
+it to the home screen, and it then opens full screen with its own icon,
+like an app - no app store involved. The setup lives in
+`frontend/vite.config.js` (manifest and service worker, via
+`vite-plugin-pwa`).
+
+**Installing needs a real `https://` address** - the hosted site (see
+[Deploy](#deploy-netlify--render--neon)). Phones
+only offer to install from a site with a valid certificate; the
+self-signed certificate of `npm run dev:phone` is enough to log in and
+test, but not to install.
+
+- **Android (Chrome):** open the site, then tap **Install app** in the
+  menu (or the install banner when it appears).
+- **iPhone (Safari):** open the site, tap **Share**, then **Add to Home
+  Screen**.
+- **Desktop Chrome / Edge:** the install icon at the right of the address
+  bar.
+
+Good to know:
+
+- **Login:** the installed app keeps its own login - on iPhone it's
+  separate from Safari, so you log in once inside the app.
+- **Offline:** the app itself opens without a connection (its files are
+  stored on the device), but expenses always come live from the server.
+  Offline you see a "You're offline" banner and can't load or save
+  entries until you reconnect.
+- **Updates:** after a new version is deployed, the app shows "A new
+  version of Spendora is ready" - tap **Reload** to switch, or **Later**
+  to keep working. Nothing reloads by itself.
+- **Icons** are made from `frontend/public/pwa-icon.svg`. After changing
+  the logo, run `npm run generate-pwa-assets` in `frontend` and commit the
+  PNGs it writes to `public/`.
+
+**Trying it on your PC:** the service worker only runs in a production
+build. From `frontend`:
+
+```powershell
+npm run build
+npm run preview          # http://localhost:4173
+```
+
+To log in there, add `http://localhost:4173` to **Allowed Callback URLs**,
+**Allowed Logout URLs** and **Allowed Web Origins** of *Spendora web* in
+Auth0. Desktop Chrome then shows its install icon.
+
+## Deploy (Netlify + Render + Neon)
+
+Three free services, one job each:
+
+```
+Browser ──> Netlify   the web app's files, from a CDN
+              │  /api/* is passed on behind the scenes (netlify.toml)
+              ▼
+            Render    the Flask API, run by gunicorn (render.yaml)
+              │
+              ▼
+            Neon      PostgreSQL
+```
+
+The browser only ever talks to the Netlify address, so the app's
+relative `/api/...` calls work exactly as with the Vite dev server - no
+CORS. Both hosts build from GitHub and redeploy on every push.
+
+| File | What it sets up |
+|---|---|
+| `netlify.toml` | build (`frontend/` → `dist`), the `/api` pass-through to Render, cache headers |
+| `render.yaml` | the API service: install, migrate, start gunicorn, environment variables |
+| `.github/workflows/checks.yml` | tests, lint and build on every push - Render waits for them |
+
+Set things up in this order - each step gives you a value the next one
+needs. Free-plan limits change now and then; check each service's
+pricing page when you sign up.
+
+### 1. Neon - the database
+
+1. Sign up at [neon.tech](https://neon.tech) and create a project:
+   name `spendora`, Postgres 17 (same as local), and **the region that
+   matches Render's** (`region:` in `render.yaml` lists the pairs).
+2. Click **Connect** and copy the connection string with **connection
+   pooling off**. It looks like
+   `postgresql://neondb_owner:...@ep-....aws.neon.tech/neondb?sslmode=require`.
+   It contains the password - keep it out of Git.
+
+The app turns `postgresql://` into the `postgresql+psycopg://` it needs
+by itself (`app/config.py`).
+
+### 2. Render - the API
+
+1. Push the repository to GitHub (the branch you want live, e.g. `main`).
+2. On [render.com](https://render.com): **New → Blueprint**, connect the
+   repository. Render reads `render.yaml` and asks for two values:
+   - `DATABASE_URL` - the Neon connection string
+   - `AUTH0_DOMAIN` - your tenant, e.g. `dev-xxxx.us.auth0.com`
+3. **Apply**. The first deploy installs packages, creates the tables
+   (`flask db upgrade`) and starts the server.
+4. Open `https://<your-service>.onrender.com/api/health` - it should say
+   `{"database": "ok", "status": "ok"}`. Copy the service address.
+
+### 3. Netlify - the web app
+
+1. In `netlify.toml`, change the `to = "https://spendora-api.onrender.com/..."`
+   address to your Render service's address. Commit and push.
+2. On [netlify.com](https://app.netlify.com): **Add new project → Import
+   an existing project**, pick the repository. The build settings come from
+   `netlify.toml` - leave the fields as they are.
+3. Under **Environment variables** add the three values from your
+   `frontend/.env.local`: `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`,
+   `VITE_AUTH0_AUDIENCE`. They're built into the JavaScript, so after
+   changing one, run **Deploys → Trigger deploy**. (They're not secrets -
+   any browser can read them.)
+4. Deploy. You get `https://<name>.netlify.app`; the name can be changed
+   under **Domain management**.
+
+### 4. Auth0 - allow the new address
+
+In Auth0, **Applications → Spendora web → Settings**, add
+`https://<name>.netlify.app` to **Allowed Callback URLs**, **Allowed
+Logout URLs** and **Allowed Web Origins** (comma-separated, keep the
+localhost entries). Save.
+
+### 5. Try it
+
+Open the site, log in, add an entry. On your phone, install it (see
+[Install on your phone](#install-on-your-phone-pwa)).
+
+The hosted database starts empty. To bring your local entries along,
+use **CSV** (export) in the local app and **Import** in the hosted one.
+Budgets aren't in the file - add them again.
+
+### Before other people use it
+
+Fine to skip while it's only you. Once others sign up:
+
+- **Privacy page:** `frontend/public/privacy.html`, served at
+  `/privacy.html` and linked from the login screen and the account menu.
+  Replace `privacy@example.com` (twice) with your own address. It's a
+  plain-language description of what this code does, not legal advice -
+  if the app grows beyond friends and family, have it checked for the
+  rules where your users live (e.g. GDPR in Europe).
+- **Your own Google keys:** until you add them, "Continue with Google"
+  uses Auth0's shared development keys, which Auth0 says aren't for
+  production. In [Google Cloud Console](https://console.cloud.google.com),
+  create an **OAuth client ID** (type *Web application*) with the
+  redirect URI `https://<your-tenant>.auth0.com/login/callback`, and set up
+  the consent screen with your site as the homepage and
+  `https://<name>.netlify.app/privacy.html` as the privacy policy. Paste
+  the client ID and secret into Auth0 → **Authentication → Social →
+  google-oauth2**.
+- **Email login:** Auth0's built-in email sender (verification and
+  password-reset emails) is for testing and rate-limited. Connect a real
+  provider under Auth0 → **Branding → Email Provider**, or offer Google
+  login only.
+
+### After that
+
+- **Updating:** `git push`. GitHub runs the checks; once they pass, Render
+  deploys (new tables or columns are migrated when the API starts).
+  Netlify rebuilds by itself. Open apps show "A new version of Spendora is
+  ready". If Render ever rejects `autoDeployTrigger` in `render.yaml`, set
+  **Settings → Auto-Deploy → After CI checks pass** in its dashboard
+  instead.
+- **Waking up:** the free API sleeps after about 15 minutes without
+  visits, and the next visit waits up to a minute while it starts. If
+  Netlify gives up waiting first, the app shows "Could not load your
+  data" - reload after a few seconds. A paid Render instance stays awake.
+  Neon also pauses when idle but wakes in about a second, unnoticed.
+- **Logs:** API errors and rejected logins are in Render → **Logs**;
+  build errors in Netlify → **Deploys**.
+- gunicorn runs on Linux only - locally on Windows keep using `flask run`.
+
 ## API
 
 All `/api/expenses` and `/api/budgets` calls need `Authorization: Bearer
@@ -250,6 +423,11 @@ From `frontend`:
 npm run lint
 npm run build
 ```
+
+GitHub runs the same checks on every push and pull request
+(`.github/workflows/checks.yml`, under the repository's **Actions** tab):
+the API tests against a fresh Postgres, then the web app's lint and build.
+Render deploys a push only after they pass.
 
 ## Changing the database schema
 
