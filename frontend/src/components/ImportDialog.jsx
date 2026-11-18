@@ -5,6 +5,7 @@ import { useMoney } from '../currency'
 import {
   analyzeCsv,
   buildCandidates,
+  CsvError,
   guessSign,
   MAX_FILE_BYTES,
   MAX_IMPORT_ROWS,
@@ -139,7 +140,12 @@ export default function ImportDialog({ existing, onClose, onImported }) {
       setVisible(PAGE)
       setSaveError('')
     } catch (err) {
-      setReadError(err.message || 'This file couldn’t be read as CSV.')
+      if (!(err instanceof CsvError)) console.warn('Could not read the CSV file:', err)
+      setReadError(
+        err instanceof CsvError
+          ? err.message
+          : 'This file couldn’t be read. Make sure it’s a CSV file and try again.',
+      )
     }
   }
 
@@ -231,7 +237,7 @@ export default function ImportDialog({ existing, onClose, onImported }) {
       setSaveError(
         Number.isInteger(index) && chosen[index]
           ? `Line ${chosen[index].line}: ${message}`
-          : `Could not import. ${err.message}`,
+          : `Couldn’t import. ${err.message}`,
       )
       setSaving(false)
     }

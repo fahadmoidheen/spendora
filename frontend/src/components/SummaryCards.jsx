@@ -13,6 +13,7 @@ import {
   CartIcon,
   LogoMark,
 } from './Icons'
+import { Skeleton } from './Skeleton'
 
 function StatCard({ label, icon, value, note, noteClass = '' }) {
   return (
@@ -23,8 +24,8 @@ function StatCard({ label, icon, value, note, noteClass = '' }) {
           {icon}
         </span>
       </div>
-      <p className="stat-value">{value}</p>
-      <p className={`stat-note ${noteClass}`}>{note}</p>
+      <div className="stat-value">{value}</div>
+      <div className={`stat-note ${noteClass}`}>{note}</div>
     </div>
   )
 }
@@ -33,9 +34,36 @@ function plural(count, word) {
   return `${count} ${word}${count === 1 ? '' : 's'}`
 }
 
+// While loading: the same four cards with placeholders where the numbers
+// go, instead of "$0.00" that looks like real data. If loading failed, a
+// dash - never a made-up zero.
+function PlaceholderCards({ failed }) {
+  const value = failed ? '—' : <Skeleton className="skeleton-value" />
+  const note = failed ? 'Not loaded' : <Skeleton className="skeleton-note" />
+  return (
+    <div className="stats" aria-busy={!failed}>
+      <div className="stat stat-hero">
+        <LogoMark className="stat-watermark" strokeWidth={7} dot={6.5} />
+        <p className="stat-label">Net this month</p>
+        <div className="stat-value">{value}</div>
+        <div className="stat-note">{note}</div>
+      </div>
+      <StatCard label="Money in" icon={<ArrowDownLeftIcon />} value={value} note={note} />
+      <StatCard label="Money out" icon={<ArrowUpRightIcon />} value={value} note={note} />
+      <StatCard label="Budget left" icon={<CartIcon />} value={value} note={note} />
+    </div>
+  )
+}
+
 // The design's four cards: net (the forest hero), money in, money out and
 // budget left - all for the current month.
-export default function SummaryCards({ expenses, budgets }) {
+// status: "loading" | "error" | "ready" (App's load status).
+export default function SummaryCards({ expenses, budgets, status = 'ready' }) {
+  if (status !== 'ready') return <PlaceholderCards failed={status === 'error'} />
+  return <Cards expenses={expenses} budgets={budgets} />
+}
+
+function Cards({ expenses, budgets }) {
   const money = useMoney()
   const thisKey = currentMonthKey()
   const thisMonth = inMonth(expenses, thisKey)

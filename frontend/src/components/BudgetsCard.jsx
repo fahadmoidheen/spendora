@@ -8,6 +8,7 @@ import { amountError } from '../utils/validate'
 import CategoryTile from './CategoryTile'
 import { CategoryIcon, EditIcon, PlusIcon, TrashIcon } from './Icons'
 import Select from './Select'
+import { BreakdownSkeleton } from './Skeleton'
 
 const toCents = (amount) => Math.round(Number(amount) * 100)
 
@@ -33,7 +34,11 @@ function BudgetForm({ budget, categories, onSave, onCancel }) {
     try {
       await onSave({ category, monthly_limit: limit }, budget?.id)
     } catch (err) {
-      setError(err.fields?.monthly_limit ?? err.fields?.category ?? err.message)
+      setError(
+        err.fields?.monthly_limit ??
+          err.fields?.category ??
+          `Couldn’t save the budget. ${err.message}`,
+      )
       setSaving(false)
     }
   }
@@ -99,7 +104,10 @@ function BudgetForm({ budget, categories, onSave, onCancel }) {
 
 // The design's Budgets card: this month's spending against each limit.
 // Bars turn amber at 80% and red at 100%, matching the Heads-up panel.
-export default function BudgetsCard({ budgets, expenses, onSave, onDelete }) {
+// status: "loading" | "error" | "ready" - placeholders, or a plain note,
+// until the budgets are actually known.
+export default function BudgetsCard({ budgets, expenses, onSave, onDelete, status = 'ready' }) {
+  const loading = status !== 'ready'
   const money = useMoney()
   // null, "new", or the id of the budget being edited
   const [editing, setEditing] = useState(null)
@@ -135,7 +143,7 @@ export default function BudgetsCard({ budgets, expenses, onSave, onDelete }) {
         <h2 id="budgets-title" className="panel-title">
           Budgets
         </h2>
-        {editing === null && available.length > 0 ? (
+        {!loading && editing === null && available.length > 0 ? (
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing('new')}>
             <PlusIcon />
             Add budget
@@ -149,11 +157,14 @@ export default function BudgetsCard({ budgets, expenses, onSave, onDelete }) {
         <BudgetForm categories={available} onSave={save} onCancel={() => setEditing(null)} />
       )}
 
-      {rows.length === 0 && editing !== 'new' && (
+      {status === 'loading' && <BreakdownSkeleton rows={2} />}
+      {status === 'error' && <p className="stat-note">Budgets couldn’t be loaded.</p>}
+
+      {!loading && rows.length === 0 && editing !== 'new' && (
         <p className="stat-note">Set a monthly limit for a category to track it here.</p>
       )}
 
-      {rows.length > 0 && (
+      {!loading && rows.length > 0 && (
         <ul className="breakdown">
           {rows.map((b) => {
             if (editing === b.id) {

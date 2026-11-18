@@ -8,6 +8,9 @@ import { CATEGORIES, INCOME_CATEGORY, LIMITS } from '../constants'
 import { parseCsv } from './csv'
 import { toCents, toIsoDate } from './format'
 
+// A problem with the file itself, worded for people (shown as is).
+export class CsvError extends Error {}
+
 export const MAX_FILE_BYTES = 5 * 1024 * 1024
 export const MAX_IMPORT_ROWS = 5000 // matches the API (IMPORT_MAX_ROWS)
 
@@ -314,11 +317,11 @@ function tidyTitle(text) {
 // Everything the review screen needs from a file's text.
 export function analyzeCsv(text) {
   const all = parseCsv(text)
-  if (all.length < 2) throw new Error('This file has no rows to import.')
+  if (all.length < 2) throw new CsvError('This file has no rows to import.')
   const headerIndex = findHeaderRow(all)
   const headers = all[headerIndex].map((h, i) => h.trim() || `Column ${i + 1}`)
   const rows = all.slice(headerIndex + 1)
-  if (rows.length === 0) throw new Error('This file has a header but no rows.')
+  if (rows.length === 0) throw new CsvError('This file has a header but no rows.')
   const mapping = guessColumns(headers)
   return {
     headers,

@@ -32,8 +32,10 @@ function ListTotal({ entries }) {
 }
 
 // Transaction rows from the design: category tile, title, "Category ·
-// date · notes", signed amount, then edit / delete.
-export default function ExpenseList({ expenses, editingId, onEdit, onDelete }) {
+// date · notes", signed amount, then edit / delete. `expenses` is the page
+// being shown; the total covers `totalEntries` (every entry that matches
+// the filters, on all pages).
+export default function ExpenseList({ expenses, totalEntries = expenses, editingId, onEdit, onDelete }) {
   const money = useMoney()
   // Delete asks for a second click inside the row instead of a browser
   // confirm() popup.
@@ -122,7 +124,7 @@ export default function ExpenseList({ expenses, editingId, onEdit, onDelete }) {
         })}
       </ul>
 
-      <ListTotal entries={expenses} />
+      <ListTotal entries={totalEntries} />
     </>
   )
 }

@@ -123,7 +123,7 @@ export default function ExpenseForm({ editing, onSave, onCancel }) {
         setErrors(error.fields)
         focusField(form, serverFields[0])
       } else {
-        setSaveError(`Could not save. ${error.message}`)
+        setSaveError(`Couldn’t save. ${error.message}`)
       }
     } finally {
       setSaving(false)
