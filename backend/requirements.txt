@@ -3,3 +3,5 @@ Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.1.0
 python-dotenv==1.2.3
 psycopg[binary]==3.3.6
+# Checks Auth0 access tokens (RS256 needs the "crypto" extra).
+PyJWT[crypto]==2.15.1

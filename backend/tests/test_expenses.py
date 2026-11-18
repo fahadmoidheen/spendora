@@ -114,10 +114,8 @@ def test_missing_expense_is_404_json(client, new_expense, method):
 @pytest.mark.parametrize(
     ("overrides", "field"),
     [
-        ({"title": ""}, "title"),
-        ({"title": "   "}, "title"),
         ({"title": "x" * 121}, "title"),
-        ({"title": None}, "title"),
+        ({"title": 42}, "title"),
         ({"amount": "0"}, "amount"),
         ({"amount": "-5"}, "amount"),
         ({"amount": "1.234"}, "amount"),
@@ -147,8 +145,9 @@ def test_invalid_fields_are_rejected(client, new_expense, overrides, field):
 def test_every_bad_field_is_reported_at_once(client):
     response = client.post("/api/expenses", json={})
     assert response.status_code == 422
+    # Title isn't among them: a missing title is filled in automatically.
     assert set(response.get_json()["fields"]) == {
-        "title", "amount", "category", "expense_date",
+        "amount", "category", "expense_date",
     }
 
 

@@ -12,7 +12,8 @@ function toPayload(values) {
   const income = values.type === 'income'
   return {
     type: values.type,
-    title: values.title,
+    // Blank -> null: the API then names it after the category ("food1").
+    title: values.title.trim() || null,
     amount: amountString(values.amount),
     category: income ? INCOME_CATEGORY : values.category,
     expense_date: values.expense_date,

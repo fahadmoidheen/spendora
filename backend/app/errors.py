@@ -25,4 +25,8 @@ def register_error_handlers(app):
     # Also receives unhandled exceptions, wrapped by Flask as a 500.
     @app.errorhandler(HTTPException)
     def handle_http_error(err):
-        return jsonify(error=err.description), err.code
+        response = jsonify(error=err.description)
+        if err.code == 401:
+            # Standard hint that the API expects a bearer token.
+            response.headers["WWW-Authenticate"] = 'Bearer realm="spendora"'
+        return response, err.code

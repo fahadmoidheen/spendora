@@ -1,3 +1,4 @@
+import { useAuth0 } from '@auth0/auth0-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createBudget, deleteBudget, listBudgets, updateBudget } from './api/budgets'
 import {
@@ -16,6 +17,7 @@ import { CloseIcon, LogoMark, PlusIcon } from './components/Icons'
 import Segmented from './components/Segmented'
 import SummaryCards from './components/SummaryCards'
 import ThemeToggle from './components/ThemeToggle'
+import UserMenu from './components/UserMenu'
 import { loadCurrency, makeMoney, MoneyContext, saveCurrency } from './currency'
 import { currentMonthKey, formatMonth, monthKey, toCents } from './utils/format'
 
@@ -72,7 +74,9 @@ function FirstEntryPrompt({ onAdd }) {
 export default function App() {
   const [expenses, setExpenses] = useState([])
   const [budgets, setBudgets] = useState([])
+  const { user, logout, loginWithRedirect } = useAuth0()
   const [status, setStatus] = useState('loading') // loading | ready | error
+  const [loadError, setLoadError] = useState(null)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(null)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
@@ -90,8 +94,10 @@ export default function App() {
         setBudgets(limits)
         setStatus('ready')
       })
-      .catch(() => {
-        if (!cancelled) setStatus('error')
+      .catch((err) => {
+        if (cancelled) return
+        setLoadError(err)
+        setStatus('error')
       })
     return () => {
       cancelled = true
@@ -196,7 +202,7 @@ export default function App() {
     listContent = (
       <div className="empty-inline">
         <h3 className="empty-title">Transactions couldn’t be loaded</h3>
-        <p className="empty-text">Start the API, then refresh the page.</p>
+        <p className="empty-text">Fix the problem shown above, then refresh the page.</p>
       </div>
     )
   } else if (shown.length > 0) {
@@ -234,6 +240,10 @@ export default function App() {
           <div className="header-actions">
             <CurrencySelect value={currency} onChange={changeCurrency} />
             <ThemeToggle />
+            <UserMenu
+              user={user}
+              onLogout={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+            />
           </div>
         </div>
       </header>
@@ -241,10 +251,12 @@ export default function App() {
       <main className="app-container app-main">
         {status === 'error' && (
           <div className="notice notice-danger" role="alert">
-            <p>
-              Could not load your data. Check that the API is running, then
-              refresh the page.
-            </p>
+            <p>Could not load your data. {loadError?.message}</p>
+            {loadError?.status === 401 && (
+              <button type="button" className="btn btn-danger btn-sm" onClick={() => loginWithRedirect()}>
+                Log in again
+              </button>
+            )}
           </div>
         )}
         {error && (
