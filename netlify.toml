@@ -15,10 +15,10 @@
 # API calls go to the Flask API on Render. Status 200 makes this a proxy,
 # not a redirect: the browser only ever sees this site's address, so the
 # app's relative /api/... calls work unchanged and no CORS is needed.
-# CHANGE the address to your Render service's URL.
+# The address is the Render service's URL (render.yaml, spendora-api).
 [[redirects]]
   from = "/api/*"
-  to = "https://spendora-api.onrender.com/api/:splat"
+  to = "https://spendora-api-q5lg.onrender.com/api/:splat"
   status = 200
 
 [[headers]]
