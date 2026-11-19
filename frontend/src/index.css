@@ -13,7 +13,8 @@
                                  14. Heads-up panel and budget alerts
                                  15. CSV import and export
                                  16. PDF report and printing
-                                 17. Loading, refresh and pages        */
+                                 17. Loading, refresh and pages
+                                 18. Tabs, bottom bar and add dialog   */
 
 /* 1. Tokens ------------------------------------------------------------ */
 
@@ -224,32 +225,25 @@ body {
   color: var(--ink);
 }
 
-/* List on the left, form and breakdown on the right. Narrow screens stack
-   them in that order, as in the design's mobile board. */
-.layout {
+/* Categories tab: spending by category and budgets side by side on wide
+   screens, stacked on narrow ones. */
+.categories-grid {
   display: grid;
   gap: 24px;
   align-items: start;
 }
 
-.layout-main,
-.layout-side {
+.categories-grid > * {
   min-width: 0;
 }
 
-.layout-side {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
 @media (min-width: 992px) {
-  .layout {
-    grid-template-columns: minmax(0, 1fr) 380px;
+  .categories-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* Keep the form clear of the top edge when scrolled into view. */
+/* Keep a panel clear of the top edge when scrolled into view. */
 .scroll-target {
   scroll-margin-top: 16px;
 }
@@ -1183,9 +1177,24 @@ textarea.form-control {
   background: var(--primary);
 }
 
-/* The form gets a forest outline while it edits an existing expense. */
-.expense-form.is-editing {
-  box-shadow: inset 0 0 0 2px var(--primary);
+/* The add / edit form fills its dialog (TransactionDialog): header, then
+   the fields scroll, then the Save buttons stay in view at the bottom. */
+.expense-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.expense-form-saved {
+  display: inline-flex;
+  margin-top: 2px;
+  color: var(--income);
+}
+
+.expense-form-saved .icon {
+  width: 16px;
+  height: 16px;
 }
 
 /* 8. Empty states ------------------------------------------------------ */
@@ -3438,5 +3447,178 @@ body,
 
   .pager-size {
     width: 122px;
+  }
+}
+
+/* 18. Tabs, bottom bar and add dialog --------------------------------------
+   components/ViewTabs.jsx is drawn twice: in the page header (tablets and
+   up) and as a bar at the bottom of the screen (phones). Adding a
+   transaction opens components/TransactionDialog.jsx. */
+
+:root {
+  --bottom-nav-h: 64px;
+}
+
+.view-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.view-tab-icon {
+  display: inline-flex;
+}
+
+.view-tab .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.view-tab:focus-visible {
+  outline: 0;
+  box-shadow: var(--focus-ring-tight);
+}
+
+/* Header tabs: the segmented control's look. */
+.page-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--subtle);
+}
+
+.page-tabs .view-tab:hover {
+  background: color-mix(in srgb, var(--surface) 50%, transparent);
+}
+
+.page-tabs .view-tab.is-active {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(11, 31, 23, 0.08);
+}
+
+/* Bottom bar: phones only. */
+.bottom-nav {
+  display: none;
+}
+
+/* Small breakdown period picker in the Categories tab. */
+.breakdown-period {
+  width: 170px;
+}
+
+/* The add / edit dialog is narrower than import and report (phones get
+   it full screen, like the others). */
+@media (min-width: 768px) {
+  .transaction-dialog {
+    width: min(560px, calc(100vw - 32px));
+  }
+}
+
+/* Secondary button ("Save & add another", "Cancel") on the left of the main
+   one, which comes first in the code so Enter means "Save". */
+.sheet-actions .btn-ghost {
+  order: -1;
+}
+
+/* Tablets and up: no floating button - "Add transaction" is in the header. */
+@media (min-width: 768px) {
+  .fab {
+    display: none;
+  }
+
+  .app-main {
+    padding-bottom: 56px;
+  }
+
+  .toast-bar {
+    bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .page-tabs,
+  .page-add {
+    display: none;
+  }
+
+  .bottom-nav {
+    position: fixed;
+    z-index: 44;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    min-height: var(--bottom-nav-h);
+    padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom))
+      max(8px, env(safe-area-inset-left));
+    background: var(--surface);
+    box-shadow: 0 -1px 0 var(--hairline), 0 -6px 18px rgba(11, 31, 23, 0.06);
+  }
+
+  .bottom-nav .view-tab {
+    flex-direction: column;
+    gap: 2px;
+    min-height: 52px;
+    padding: 4px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .bottom-nav .view-tab-icon {
+    padding: 4px 16px;
+    border-radius: 999px;
+    transition: background-color 0.15s;
+  }
+
+  .bottom-nav .view-tab .icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .bottom-nav .view-tab.is-active {
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  .bottom-nav .view-tab.is-active .view-tab-icon {
+    background: var(--subtle);
+  }
+
+  /* The floating add button sits just above the bar; leave room under the
+     last row for both. */
+  .fab {
+    bottom: calc(var(--bottom-nav-h) + 14px + env(safe-area-inset-bottom));
+  }
+
+  .app-main {
+    padding-bottom: calc(var(--bottom-nav-h) + 96px + env(safe-area-inset-bottom));
+  }
+
+  .toast-bar {
+    bottom: calc(var(--bottom-nav-h) + 88px + env(safe-area-inset-bottom));
+  }
+
+  .breakdown-period {
+    width: 150px;
+  }
+}
+
+@media print {
+  .bottom-nav {
+    display: none !important;
   }
 }

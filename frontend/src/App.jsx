@@ -12,13 +12,15 @@ import BudgetToast from './components/BudgetToast'
 import CategoryBreakdown from './components/CategoryBreakdown'
 import CurrencySelect from './components/CurrencySelect'
 import ExpenseFilters from './components/ExpenseFilters'
-import ExpenseForm from './components/ExpenseForm'
 import ExpenseList from './components/ExpenseList'
 import HeadsUp from './components/HeadsUp'
 import {
+  ChartIcon,
   CloseIcon,
   DownloadIcon,
   FileTextIcon,
+  GridIcon,
+  ListIcon,
   LogoMark,
   PlusIcon,
   RefreshIcon,
@@ -28,10 +30,14 @@ import ImportDialog from './components/ImportDialog'
 import Pagination from './components/Pagination'
 import ReportDialog from './components/ReportDialog'
 import Segmented from './components/Segmented'
+import Select from './components/Select'
 import { TransactionsSkeleton } from './components/Skeleton'
 import SummaryCards from './components/SummaryCards'
 import ThemeToggle from './components/ThemeToggle'
+import Toast from './components/Toast'
+import TransactionDialog from './components/TransactionDialog'
 import UserMenu from './components/UserMenu'
+import ViewTabs from './components/ViewTabs'
 import { loadCurrency, makeMoney, MoneyContext, saveCurrency } from './currency'
 import { useOnlineStatus } from './useOnlineStatus'
 import { newlyCrossed } from './utils/budgetAlerts'
@@ -50,12 +56,20 @@ const TYPE_FILTERS = [
   { value: 'income', label: 'Income' },
 ]
 
-const VIEWS = [
-  { value: 'overview', label: 'Overview' },
-  { value: 'insights', label: 'Insights' },
+// The app's sections. The tab is kept in the address (#analysis), so a
+// reload - or reopening the installed app - lands on the same one.
+const TABS = [
+  { value: 'transactions', label: 'Transactions', icon: <ListIcon /> },
+  { value: 'analysis', label: 'Analysis', icon: <ChartIcon /> },
+  { value: 'categories', label: 'Categories', icon: <GridIcon /> },
 ]
 
-// The charts library is big, so Insights loads only when first opened.
+function tabFromAddress() {
+  const name = window.location.hash.slice(1)
+  return TABS.some((t) => t.value === name) ? name : 'transactions'
+}
+
+// The charts library is big, so Analysis loads only when first opened.
 const InsightsView = lazy(() => import('./components/insights/InsightsView'))
 
 function Spinner() {
@@ -126,13 +140,15 @@ export default function App() {
   const online = useOnlineStatus()
   const [editing, setEditing] = useState(null)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
-  const [view, setView] = useState('overview') // overview | insights
+  const [view, setView] = useState(tabFromAddress) // transactions | analysis | categories
+  const [formOpen, setFormOpen] = useState(false) // add / edit transaction dialog
+  const [savedToast, setSavedToast] = useState('')
+  const [categoryMonth, setCategoryMonth] = useState(currentMonthKey)
   const [currency, setCurrency] = useState(loadCurrency)
   const [budgetToast, setBudgetToast] = useState(null)
   const [importing, setImporting] = useState(false)
   const [reporting, setReporting] = useState(false)
   const [notice, setNotice] = useState('')
-  const formRef = useRef(null)
 
   const money = useMemo(() => makeMoney(currency), [currency])
   const closeBudgetToast = useCallback(() => setBudgetToast(null), [])
@@ -255,46 +271,63 @@ export default function App() {
   )
   const clearFilters = () => updateFilters({ ...EMPTY_FILTERS, sort: filters.sort })
 
-  const breakdownLabel = [
-    filters.month ? formatMonth(filters.month) : 'All time',
-    filters.search || filters.category ? 'filtered' : null,
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  // Categories tab: one month (this one by default) or all time.
+  const categoryMonths = useMemo(() => {
+    const keys = [...new Set([currentMonthKey(), ...months])].sort().reverse()
+    // "November 2026" in the list, "Nov 2026" on the (narrow) button.
+    const short = (key) =>
+      new Date(`${key}-01T00:00`).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+    return [
+      ...keys.map((key) => ({ value: key, label: formatMonth(key), short: short(key) })),
+      { value: 'all', label: 'All time' },
+    ]
+  }, [months])
+  const categoryEntries = useMemo(
+    () =>
+      categoryMonth === 'all'
+        ? expenses
+        : expenses.filter((e) => monthKey(e.expense_date) === categoryMonth),
+    [expenses, categoryMonth],
+  )
 
   function changeCurrency(code) {
     setCurrency(code)
     saveCurrency(code)
   }
 
-  function scrollToForm() {
-    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  function changeView(next) {
+    setView(next)
+    const { pathname, search } = window.location
+    window.history.replaceState(null, '', next === 'transactions' ? pathname + search : `#${next}`)
+    window.scrollTo({ top: 0 })
   }
 
-  // "Add expense" buttons: leave edit mode (and Insights), bring the form
-  // into view and put the cursor in Amount. Waits a frame for the form to
-  // (re)mount.
+  // "Add transaction" buttons open the dialog; editing a row opens it with
+  // that entry.
   function startAdding() {
-    setView('overview')
     setEditing(null)
-    requestAnimationFrame(() => {
-      scrollToForm()
-      document.getElementById('amount')?.focus({ preventScroll: true })
-    })
+    setFormOpen(true)
   }
 
   function handleEdit(entry) {
     setEditing(entry)
-    requestAnimationFrame(scrollToForm)
+    setFormOpen(true)
   }
 
-  // After saving, pop a notice if the entry pushed a budget past 80% or 100%.
+  const closeForm = useCallback(() => {
+    setFormOpen(false)
+    setEditing(null)
+  }, [])
+
+  const closeSavedToast = useCallback(() => setSavedToast(''), [])
+
+  // After saving, say so - or, if the entry pushed a budget past 80% or
+  // 100%, show that instead.
   async function handleSave(values) {
     let next
     if (editing) {
       const updated = await updateExpense(editing.id, values)
       next = expenses.map((e) => (e.id === updated.id ? updated : e))
-      setEditing(null)
     } else {
       const created = await createExpense(values)
       next = [...expenses, created]
@@ -302,7 +335,11 @@ export default function App() {
     }
     setExpenses(next)
     const crossed = newlyCrossed(budgets, expenses, next)
-    if (crossed) setBudgetToast(crossed)
+    if (crossed) {
+      setBudgetToast(crossed)
+    } else {
+      setSavedToast(editing ? 'Changes saved' : values.type === 'income' ? 'Income saved' : 'Expense saved')
+    }
   }
 
   function handleImported(created) {
@@ -318,7 +355,6 @@ export default function App() {
     try {
       await deleteExpense(id)
       setExpenses((list) => list.filter((e) => e.id !== id))
-      if (editing?.id === id) setEditing(null)
     } catch (err) {
       setError(`Couldn’t delete the entry. ${err.message}`)
     }
@@ -478,21 +514,15 @@ export default function App() {
             <h1 className="page-title">Your money flow</h1>
           </div>
           <div className="page-actions">
-            <Segmented
-              name="view"
-              label="View"
-              options={VIEWS}
-              value={view}
-              onChange={setView}
-            />
-            <button type="button" className="btn btn-accent" onClick={startAdding}>
+            <ViewTabs tabs={TABS} value={view} onChange={changeView} className="page-tabs" />
+            <button type="button" className="btn btn-accent page-add" onClick={startAdding}>
               <PlusIcon />
-              Add expense
+              Add transaction
             </button>
           </div>
         </div>
 
-        {view === 'insights' ? (
+        {view === 'analysis' && (
           status === 'ready' ? (
             <Suspense fallback={<Spinner />}>
               <InsightsView expenses={expenses} />
@@ -500,19 +530,46 @@ export default function App() {
           ) : status === 'loading' ? (
             <Spinner />
           ) : null
-        ) : (
+        )}
+
+        {view === 'categories' && (
+          <div className="categories-grid">
+            <CategoryBreakdown
+              expenses={categoryEntries}
+              status={status}
+              control={
+                <Select
+                  label="Period"
+                  options={categoryMonths}
+                  value={categoryMonth}
+                  onChange={setCategoryMonth}
+                  variant="compact"
+                  className="breakdown-period"
+                />
+              }
+            />
+            <BudgetsCard
+              budgets={budgets}
+              expenses={expenses}
+              onSave={handleSaveBudget}
+              onDelete={handleDeleteBudget}
+              status={status}
+            />
+          </div>
+        )}
+
+        {view === 'transactions' && (
           <>
             {status === 'ready' && (
               <HeadsUp budgets={budgets} expenses={expenses} userId={user?.sub} />
             )}
             <SummaryCards expenses={expenses} budgets={budgets} status={status} />
 
-            <div className="layout">
-              <section
-                ref={transactionsRef}
-                className="panel layout-main scroll-target"
-                aria-labelledby="transactions-title"
-              >
+            <section
+              ref={transactionsRef}
+              className="panel scroll-target"
+              aria-labelledby="transactions-title"
+            >
                 <div className="panel-head">
                   <div className="panel-head-text">
                     <h2 id="transactions-title" className="panel-title">
@@ -576,36 +633,26 @@ export default function App() {
                 </div>
                 <ExpenseFilters filters={filters} months={months} onChange={updateFilters} />
                 {listContent}
-              </section>
-
-              <div className="layout-side">
-                <div ref={formRef} className="scroll-target">
-                  <ExpenseForm
-                    key={editing?.id ?? 'new'}
-                    editing={editing}
-                    onSave={handleSave}
-                    onCancel={() => setEditing(null)}
-                  />
-                </div>
-                <BudgetsCard
-                  budgets={budgets}
-                  expenses={expenses}
-                  onSave={handleSaveBudget}
-                  onDelete={handleDeleteBudget}
-                  status={status}
-                />
-                <CategoryBreakdown expenses={shown} label={breakdownLabel} status={status} />
-              </div>
-            </div>
+            </section>
           </>
         )}
       </main>
 
-      {/* Phones and tablets: the design kit's floating add button, so
-          adding an entry never needs a scroll up to the form. */}
-      <button type="button" className="fab" aria-label="Add expense" onClick={startAdding}>
+      {/* Phones: the tabs move to a bar at the bottom, within thumb reach,
+          and the floating button adds a transaction from anywhere. */}
+      <ViewTabs tabs={TABS} value={view} onChange={changeView} className="bottom-nav" />
+      <button type="button" className="fab" aria-label="Add transaction" onClick={startAdding}>
         <PlusIcon />
       </button>
+
+      {formOpen && (
+        <TransactionDialog
+          key={editing?.id ?? 'new'}
+          editing={editing}
+          onSave={handleSave}
+          onClose={closeForm}
+        />
+      )}
 
       {importing && (
         <ImportDialog
@@ -626,7 +673,11 @@ export default function App() {
 
       {/* Always mounted, so screen readers announce the notice when it appears. */}
       <div role="status" aria-live="polite">
-        {budgetToast && <BudgetToast alert={budgetToast} onClose={closeBudgetToast} />}
+        {budgetToast ? (
+          <BudgetToast alert={budgetToast} onClose={closeBudgetToast} />
+        ) : (
+          savedToast && <Toast message={savedToast} onClose={closeSavedToast} />
+        )}
       </div>
     </MoneyContext.Provider>
   )

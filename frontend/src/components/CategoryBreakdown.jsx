@@ -15,8 +15,9 @@ function totalsByCategory(expenses) {
 }
 
 // Where the shown expenses went, by category (income is left out).
-// status: "loading" | "error" | "ready" (App's load status).
-export default function CategoryBreakdown({ expenses, label, status = 'ready' }) {
+// status: "loading" | "error" | "ready" (App's load status). `control`
+// (e.g. a period picker) replaces the `label` text in the header.
+export default function CategoryBreakdown({ expenses, label, control, status = 'ready' }) {
   const money = useMoney()
   const spending = onlyExpenses(expenses)
   const rows = totalsByCategory(spending)
@@ -28,7 +29,7 @@ export default function CategoryBreakdown({ expenses, label, status = 'ready' })
         <h2 id="breakdown-title" className="panel-title">
           By category
         </h2>
-        <span className="panel-sub">{label}</span>
+        {control ?? <span className="panel-sub">{label}</span>}
       </div>
 
       {status === 'loading' ? (
