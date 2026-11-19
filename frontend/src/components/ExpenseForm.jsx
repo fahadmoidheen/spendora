@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { CATEGORIES, INCOME_CATEGORY, LIMITS } from '../constants'
-import { sanitizeAmount, useMoney } from '../currency'
+import { useMoney } from '../currency'
 import { todayIso } from '../utils/format'
 import { validateExpense } from '../utils/validate'
+import AmountInput from './AmountInput'
 import DatePicker from './DatePicker'
-import { ArrowDownLeftIcon, ArrowUpRightIcon, CategoryIcon } from './Icons'
+import { ArrowDownLeftIcon, ArrowUpRightIcon, CategoryIcon, CheckIcon, CloseIcon } from './Icons'
 import Segmented from './Segmented'
 
 const TYPE_OPTIONS = [
@@ -45,10 +46,13 @@ function focusField(form, name) {
   target?.focus()
 }
 
-// Field order follows the design: type, amount, title, category, date,
-// notes. Remounted (via `key`) whenever the entry being edited changes, so
-// the initial state below is always fresh.
-export default function ExpenseForm({ editing, onSave, onCancel }) {
+// The add / edit transaction form, shown in TransactionDialog. Field order
+// follows the design: type, amount, title, category, date, notes.
+//
+// onSave(values) saves (and throws on failure); onDone() closes the
+// dialog. When adding, "Save & add another" keeps it open with a fresh
+// form instead.
+export default function ExpenseForm({ editing, onSave, onDone }) {
   const money = useMoney()
   const [values, setValues] = useState(() =>
     editing ? valuesFrom(editing) : blankValues(),
@@ -56,6 +60,7 @@ export default function ExpenseForm({ editing, onSave, onCancel }) {
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [savedCount, setSavedCount] = useState(0) // "Saved" note after "add another"
 
   const income = values.type === 'income'
   const noun = income ? 'income' : 'expense'
@@ -99,6 +104,7 @@ export default function ExpenseForm({ editing, onSave, onCancel }) {
   async function handleSubmit(event) {
     event.preventDefault()
     const form = event.currentTarget
+    const another = event.nativeEvent.submitter?.value === 'another'
     const found = validateExpense(values, money.decimals)
     setErrors(found)
 
@@ -112,10 +118,13 @@ export default function ExpenseForm({ editing, onSave, onCancel }) {
     setSaveError('')
     try {
       await onSave(values)
-      if (!editing) {
-        setValues(blankValues(values))
-        focusField(form, 'amount')
+      if (editing || !another) {
+        onDone()
+        return
       }
+      setValues(blankValues(values))
+      setSavedCount((n) => n + 1)
+      focusField(form, 'amount')
     } catch (error) {
       // The API re-checks every field; show its messages next to them.
       const serverFields = error.fields ? Object.keys(error.fields) : []
@@ -133,23 +142,31 @@ export default function ExpenseForm({ editing, onSave, onCancel }) {
   const errorId = (field) => (errors[field] ? `${field}-error` : undefined)
 
   return (
-    <form
-      className={`panel expense-form${editing ? ' is-editing' : ''}`}
-      onSubmit={handleSubmit}
-      noValidate
-      aria-labelledby="expense-form-title"
-    >
-      <div className="panel-head">
-        <h2 id="expense-form-title" className="panel-title">
-          {editing ? `Edit ${noun}` : `Add ${noun}`}
-        </h2>
-        {editing && (
-          <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
-            Cancel
-          </button>
-        )}
+    <form className="expense-form" onSubmit={handleSubmit} noValidate aria-labelledby="expense-form-title">
+      <div className="sheet-head">
+        <div>
+          <h2 id="expense-form-title" className="panel-title">
+            {editing ? `Edit ${noun}` : `Add ${noun}`}
+          </h2>
+          {savedCount > 0 && (
+            <p className="panel-sub expense-form-saved" role="status">
+              <CheckIcon />
+              {savedCount === 1 ? 'Saved. Add the next one.' : `${savedCount} saved. Add the next one.`}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          className="btn btn-ghost btn-icon btn-icon-sm"
+          aria-label="Close"
+          onClick={onDone}
+          disabled={saving}
+        >
+          <CloseIcon />
+        </button>
       </div>
 
+      <div className="sheet-body">
       <Segmented
         name="type"
         label="Transaction type"
@@ -167,21 +184,16 @@ export default function ExpenseForm({ editing, onSave, onCancel }) {
           <span className="amount-badge" aria-hidden="true">
             {money.symbol}
           </span>
-          <input
+          <AmountInput
             id="amount"
             name="amount"
-            type="text"
-            inputMode={money.decimals > 0 ? 'decimal' : 'numeric'}
-            autoComplete="off"
             className="amount-input"
+            decimals={money.decimals}
             placeholder={money.decimals > 0 ? `0.${'0'.repeat(money.decimals)}` : '0'}
             value={values.amount}
-            onChange={(event) =>
-              setField('amount', sanitizeAmount(event.target.value, money.decimals))
-            }
+            onChange={(amount) => setField('amount', amount)}
             aria-invalid={Boolean(errors.amount)}
             aria-describedby={errorId('amount')}
-            autoFocus={Boolean(editing)}
           />
         </div>
         {errors.amount && (
@@ -277,15 +289,31 @@ export default function ExpenseForm({ editing, onSave, onCancel }) {
         />
       </div>
 
-      {saveError && (
-        <p className="form-error" role="alert">
-          {saveError}
-        </p>
-      )}
+      </div>
 
-      <button type="submit" className="btn btn-primary btn-block" disabled={saving}>
-        {saving ? 'Saving…' : editing ? 'Save changes' : `Save ${noun}`}
-      </button>
+      <div className="sheet-foot">
+        {saveError && (
+          <p className="form-error" role="alert">
+            {saveError}
+          </p>
+        )}
+        {/* The main button comes first, so Enter in a field means "Save";
+            CSS (order) shows the secondary one on its left. */}
+        <div className="sheet-actions">
+          <button type="submit" value="close" className="btn btn-primary" disabled={saving}>
+            {saving ? 'Saving…' : editing ? 'Save changes' : `Save ${noun}`}
+          </button>
+          {editing ? (
+            <button type="button" className="btn btn-ghost" onClick={onDone} disabled={saving}>
+              Cancel
+            </button>
+          ) : (
+            <button type="submit" value="another" className="btn btn-ghost" disabled={saving}>
+              Save &amp; add another
+            </button>
+          )}
+        </div>
+      </div>
     </form>
   )
 }
