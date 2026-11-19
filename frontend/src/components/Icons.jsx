@@ -71,6 +71,13 @@ export const ReceiptIcon = () => (
   <PathIcon d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z M9 8h6 M9 12h6 M9 16h3" />
 )
 
+// Section tabs: Transactions, Analysis, Categories.
+export const ListIcon = () => <PathIcon d="M9 6h11 M9 12h11 M9 18h11 M4 6h.01 M4 12h.01 M4 18h.01" />
+export const ChartIcon = () => <PathIcon d="M4 20h16 M7 16v-5 M12 16V6 M17 16v-8" />
+export const GridIcon = () => (
+  <PathIcon d="M5 4h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z M15 4h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z M5 14h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z M15 14h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1z" />
+)
+
 // Two arrows chasing each other: reload the data.
 export const RefreshIcon = () => (
   <PathIcon d="M20 11a8 8 0 0 0-14.3-4.9L4 8 M4 3v5h5 M4 13a8 8 0 0 0 14.3 4.9L20 16 M20 21v-5h-5" />

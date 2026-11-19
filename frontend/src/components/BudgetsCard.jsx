@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { CATEGORIES } from '../constants'
-import { sanitizeAmount, useMoney } from '../currency'
+import { useMoney } from '../currency'
 import { levelOf } from '../utils/budgetAlerts'
 import { currentMonthKey, formatMonth } from '../utils/format'
 import { spentByCategory } from '../utils/transactions'
 import { amountError } from '../utils/validate'
+import AmountInput from './AmountInput'
 import CategoryTile from './CategoryTile'
 import { CategoryIcon, EditIcon, PlusIcon, TrashIcon } from './Icons'
 import Select from './Select'
@@ -67,16 +68,14 @@ function BudgetForm({ budget, categories, onSave, onCancel }) {
         <span className="amount-badge" aria-hidden="true">
           {money.symbol}
         </span>
-        <input
+        <AmountInput
           id={inputId}
-          type="text"
-          inputMode={money.decimals > 0 ? 'decimal' : 'numeric'}
-          autoComplete="off"
           className="amount-input"
+          decimals={money.decimals}
           placeholder="Monthly limit"
           value={limit}
-          onChange={(event) => {
-            setLimit(sanitizeAmount(event.target.value, money.decimals))
+          onChange={(next) => {
+            setLimit(next)
             setError('')
           }}
           aria-invalid={Boolean(error)}
