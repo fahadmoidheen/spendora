@@ -45,3 +45,45 @@ ready-to-save expense or income.
   to leave your PC.
 - Free-tier limits (about 30 requests/minute and 1,000/day per third-party
   listings) and terms can change. Check console.groq.com for your account.
+
+## Add an entry from a bank SMS (share or paste)
+
+Phones never let a web app read SMS, so the user hands over one message at
+a time: Share it to Spendora (Android) or paste it (iPhone, desktop). The
+add dialog opens filled in for them to check and save.
+
+**Plan**
+
+- [ ] Android: add a `share_target` to the PWA manifest in
+      `frontend/vite.config.js`, so the installed app shows up in the
+      Share sheet.
+  - Use `method: "POST"` and handle it in the service worker, so the SMS
+    text never sits in a URL or reaches Netlify's logs. The SW is built by
+    `generateSW`; add the handler with workbox `importScripts`, or switch
+    to `injectManifest`.
+  - The SW hands the text to the page, which opens the add dialog.
+- [ ] iPhone and desktop: a "Paste SMS" box in the add dialog.
+- [ ] Read the SMS with simple rules first (no LLM): amount (Rs / INR /
+      ₹), debited vs credited, date, merchant or UPI name. Reuse
+      `parseAmount` from `utils/csvImport.js`.
+  - Ignore OTPs, offers and balance-only messages with a clear "This
+    doesn't look like a payment" note.
+  - Never save straight away; always show the filled form first.
+- [ ] LLM fallback for formats the rules miss: send the text to
+      `POST /api/assistant/parse` from the chat assistant above. A bank
+      SMS is just another message, and the LLM also guesses the category.
+  - Before sending, strip the available balance and reference numbers;
+    the masked account number (XX1234) isn't needed either.
+- [ ] Warn when the same amount on the same date already exists (reuse the
+      CSV import's duplicate check).
+- [ ] Tests: made-up sample SMS from several banks (debit, credit, UPI,
+      card), plus OTP and promo messages that must be rejected. No real
+      messages in the repo.
+
+**Things to keep in mind**
+
+- Share only works once the app is installed (Chrome on Android). iPhone
+  web apps can't receive shared text, so iPhone users paste.
+- It's one tap per message, not automatic. Automatic reading needs a
+  native Android app plus Google Play's SMS permission review; iPhone
+  doesn't allow it at all.

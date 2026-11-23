@@ -1,9 +1,10 @@
-// The app's section switcher: Transactions, Analysis, Categories.
+// The app's section switcher: Transactions, Analysis, Categories, To-dos.
 //
 // Drawn twice by App with the same buttons: "page-tabs" sits in the page
 // header on larger screens (styled like the segmented control), and
 // "bottom-nav" is the phone's bottom bar. CSS shows one or the other. The
-// current section is marked with aria-current for screen readers.
+// current section is marked with aria-current for screen readers. A tab
+// can carry a count (`badge`), e.g. to-dos due today.
 export default function ViewTabs({ tabs, value, onChange, className }) {
   return (
     <nav className={`view-tabs ${className}`} aria-label="Sections">
@@ -19,6 +20,12 @@ export default function ViewTabs({ tabs, value, onChange, className }) {
             {tab.icon}
           </span>
           {tab.label}
+          {tab.badge > 0 && (
+            <span className="view-tab-badge">
+              {tab.badge > 9 ? '9+' : tab.badge}
+              <span className="visually-hidden"> due</span>
+            </span>
+          )}
         </button>
       ))}
     </nav>

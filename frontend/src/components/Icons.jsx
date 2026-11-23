@@ -71,7 +71,10 @@ export const ReceiptIcon = () => (
   <PathIcon d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z M9 8h6 M9 12h6 M9 16h3" />
 )
 
-// Section tabs: Transactions, Analysis, Categories.
+// Section tabs: Transactions, Analysis, Categories, To-dos.
+export const CheckSquareIcon = () => (
+  <PathIcon d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M8.5 12l2.5 2.5 4.5-5" />
+)
 export const ListIcon = () => <PathIcon d="M9 6h11 M9 12h11 M9 18h11 M4 6h.01 M4 12h.01 M4 18h.01" />
 export const ChartIcon = () => <PathIcon d="M4 20h16 M7 16v-5 M12 16V6 M17 16v-8" />
 export const GridIcon = () => (

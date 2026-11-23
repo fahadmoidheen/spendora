@@ -18,5 +18,6 @@ def index():
             "health": "/api/health",
             "expenses": "/api/expenses",
             "budgets": "/api/budgets",
+            "todos": "/api/todos",
         },
     )
