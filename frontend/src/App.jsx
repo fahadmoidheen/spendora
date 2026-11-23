@@ -7,6 +7,7 @@ import {
   listExpenses,
   updateExpense,
 } from './api/expenses'
+import { completeTodo, createTodo, deleteTodo, listTodos, updateTodo } from './api/todos'
 import BudgetsCard from './components/BudgetsCard'
 import BudgetToast from './components/BudgetToast'
 import CategoryBreakdown from './components/CategoryBreakdown'
@@ -16,6 +17,7 @@ import ExpenseList from './components/ExpenseList'
 import HeadsUp from './components/HeadsUp'
 import {
   ChartIcon,
+  CheckSquareIcon,
   CloseIcon,
   DownloadIcon,
   FileTextIcon,
@@ -35,6 +37,9 @@ import { TransactionsSkeleton } from './components/Skeleton'
 import SummaryCards from './components/SummaryCards'
 import ThemeToggle from './components/ThemeToggle'
 import Toast from './components/Toast'
+import TodayCard from './components/TodayCard'
+import TodoDialog from './components/TodoDialog'
+import TodosView from './components/TodosView'
 import TransactionDialog from './components/TransactionDialog'
 import UserMenu from './components/UserMenu'
 import ViewTabs from './components/ViewTabs'
@@ -42,8 +47,9 @@ import { loadCurrency, makeMoney, MoneyContext, saveCurrency } from './currency'
 import { useOnlineStatus } from './useOnlineStatus'
 import { newlyCrossed } from './utils/budgetAlerts'
 import { downloadCsv, entriesToCsv } from './utils/csv'
-import { currentMonthKey, formatMonth, monthKey, toCents } from './utils/format'
+import { currentMonthKey, formatDate, formatMonth, monthKey, toCents, todayIso } from './utils/format'
 import { loadPageSize, PAGE_SIZES, savePageSize } from './utils/pagination'
+import { dueNow, todoValues } from './utils/todos'
 
 const EMPTY_FILTERS = { type: 'all', search: '', category: '', month: '', sort: 'newest' }
 
@@ -62,6 +68,7 @@ const TABS = [
   { value: 'transactions', label: 'Transactions', icon: <ListIcon /> },
   { value: 'analysis', label: 'Analysis', icon: <ChartIcon /> },
   { value: 'categories', label: 'Categories', icon: <GridIcon /> },
+  { value: 'todos', label: 'To-dos', icon: <CheckSquareIcon /> },
 ]
 
 function tabFromAddress() {
@@ -133,6 +140,7 @@ function FirstEntryPrompt({ onAdd, onImport }) {
 export default function App() {
   const [expenses, setExpenses] = useState([])
   const [budgets, setBudgets] = useState([])
+  const [todos, setTodos] = useState([])
   const { user, logout, loginWithRedirect } = useAuth0()
   const [status, setStatus] = useState('loading') // loading | ready | error
   const [loadError, setLoadError] = useState(null)
@@ -140,8 +148,10 @@ export default function App() {
   const online = useOnlineStatus()
   const [editing, setEditing] = useState(null)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
-  const [view, setView] = useState(tabFromAddress) // transactions | analysis | categories
+  const [view, setView] = useState(tabFromAddress) // transactions | analysis | categories | todos
   const [formOpen, setFormOpen] = useState(false) // add / edit transaction dialog
+  const [todoFormOpen, setTodoFormOpen] = useState(false) // add / edit to-do dialog
+  const [editingTodo, setEditingTodo] = useState(null)
   const [savedToast, setSavedToast] = useState('')
   const [categoryMonth, setCategoryMonth] = useState(currentMonthKey)
   const [currency, setCurrency] = useState(loadCurrency)
@@ -168,9 +178,14 @@ export default function App() {
     loadingRef.current = true
     const slowTimer = setTimeout(() => setSlow(true), SLOW_AFTER_MS)
     try {
-      const [entries, limits] = await Promise.all([listExpenses(), listBudgets()])
+      const [entries, limits, tasks] = await Promise.all([
+        listExpenses(),
+        listBudgets(),
+        listTodos(),
+      ])
       setExpenses(entries)
       setBudgets(limits)
+      setTodos(tasks)
       setStatus('ready')
       setLoadError(null)
       loadedAtRef.current = Date.now()
@@ -380,6 +395,102 @@ export default function App() {
     }
   }
 
+  // To-dos. Adding and editing happen in TodoDialog, which shows its own
+  // errors; ticking off, reopening and deleting report here.
+  const dueCount = dueNow(todos).length
+
+  function startAddingTodo() {
+    setEditingTodo(null)
+    setTodoFormOpen(true)
+  }
+
+  function handleEditTodo(todo) {
+    setEditingTodo(todo)
+    setTodoFormOpen(true)
+  }
+
+  const closeTodoForm = useCallback(() => {
+    setTodoFormOpen(false)
+    setEditingTodo(null)
+  }, [])
+
+  const replaceTodo = (updated) => setTodos((list) => list.map((t) => (t.id === updated.id ? updated : t)))
+
+  async function handleSaveTodo(values) {
+    if (editingTodo) {
+      replaceTodo(await updateTodo(editingTodo.id, { ...values, done: editingTodo.done }))
+      setSavedToast('To-do saved')
+    } else {
+      const created = await createTodo(values)
+      setTodos((list) => [...list, created])
+      setSavedToast('To-do added')
+    }
+  }
+
+  async function handleQuickAddTodo(title) {
+    const created = await createTodo({ title, due_date: todayIso() })
+    setTodos((list) => [...list, created])
+  }
+
+  // Ticking off: a payment can be saved as an expense in the same step,
+  // and a repeating to-do moves on to its next date.
+  async function handleCompleteTodo(todo, addExpense) {
+    try {
+      const { todo: updated, expense } = await completeTodo(todo.id, { date: todayIso(), addExpense })
+      replaceTodo(updated)
+      const crossed = expense ? newlyCrossed(budgets, expenses, [...expenses, expense]) : null
+      if (expense) setExpenses((list) => [...list, expense])
+      if (crossed) {
+        setBudgetToast(crossed)
+        return
+      }
+      const parts = [expense ? 'Saved as an expense' : 'Done']
+      if (!updated.done) parts.push(`next on ${formatDate(updated.due_date)}`)
+      setSavedToast(parts.join(' · '))
+    } catch (err) {
+      setError(`Couldn’t update the to-do. ${err.message}`)
+    }
+  }
+
+  async function handleReopenTodo(todo) {
+    try {
+      replaceTodo(await updateTodo(todo.id, { ...todoValues(todo), done: false }))
+    } catch (err) {
+      setError(`Couldn’t update the to-do. ${err.message}`)
+    }
+  }
+
+  async function handleDeleteTodo(id) {
+    try {
+      await deleteTodo(id)
+      setTodos((list) => list.filter((t) => t.id !== id))
+    } catch (err) {
+      setError(`Couldn’t delete the to-do. ${err.message}`)
+    }
+  }
+
+  const todoListProps = {
+    onComplete: handleCompleteTodo,
+    onReopen: handleReopenTodo,
+    onEdit: handleEditTodo,
+    onDelete: handleDeleteTodo,
+  }
+
+  // Installed app: the number of to-dos due shows on its icon, where the
+  // system supports it (desktop installs; iPhone once notifications are
+  // allowed). Elsewhere this quietly does nothing.
+  useEffect(() => {
+    if (status !== 'ready' || !('setAppBadge' in navigator)) return
+    try {
+      const pending = dueCount ? navigator.setAppBadge(dueCount) : navigator.clearAppBadge()
+      pending?.catch?.(() => {})
+    } catch {
+      // Not allowed here - the badge is a nice-to-have.
+    }
+  }, [dueCount, status])
+
+  const tabs = TABS.map((tab) => (tab.value === 'todos' ? { ...tab, badge: dueCount } : tab))
+
   let listContent
   if (status === 'loading') {
     listContent = <TransactionsSkeleton />
@@ -514,10 +625,14 @@ export default function App() {
             <h1 className="page-title">Your money flow</h1>
           </div>
           <div className="page-actions">
-            <ViewTabs tabs={TABS} value={view} onChange={changeView} className="page-tabs" />
-            <button type="button" className="btn btn-accent page-add" onClick={startAdding}>
+            <ViewTabs tabs={tabs} value={view} onChange={changeView} className="page-tabs" />
+            <button
+              type="button"
+              className="btn btn-accent page-add"
+              onClick={view === 'todos' ? startAddingTodo : startAdding}
+            >
               <PlusIcon />
-              Add transaction
+              {view === 'todos' ? 'Add to-do' : 'Add transaction'}
             </button>
           </div>
         </div>
@@ -558,8 +673,28 @@ export default function App() {
           </div>
         )}
 
+        {view === 'todos' && (
+          <TodosView
+            todos={todos}
+            status={status}
+            onQuickAdd={handleQuickAddTodo}
+            onAdd={startAddingTodo}
+            {...todoListProps}
+          />
+        )}
+
         {view === 'transactions' && (
           <>
+            {status === 'ready' && (
+              <TodayCard
+                todos={todos}
+                expenses={expenses}
+                budgets={budgets}
+                onAdd={startAddingTodo}
+                onOpenAll={() => changeView('todos')}
+                {...todoListProps}
+              />
+            )}
             {status === 'ready' && (
               <HeadsUp budgets={budgets} expenses={expenses} userId={user?.sub} />
             )}
@@ -639,9 +774,14 @@ export default function App() {
       </main>
 
       {/* Phones: the tabs move to a bar at the bottom, within thumb reach,
-          and the floating button adds a transaction from anywhere. */}
-      <ViewTabs tabs={TABS} value={view} onChange={changeView} className="bottom-nav" />
-      <button type="button" className="fab" aria-label="Add transaction" onClick={startAdding}>
+          and the floating button adds a transaction (a to-do on that tab). */}
+      <ViewTabs tabs={tabs} value={view} onChange={changeView} className="bottom-nav" />
+      <button
+        type="button"
+        className="fab"
+        aria-label={view === 'todos' ? 'Add to-do' : 'Add transaction'}
+        onClick={view === 'todos' ? startAddingTodo : startAdding}
+      >
         <PlusIcon />
       </button>
 
@@ -651,6 +791,15 @@ export default function App() {
           editing={editing}
           onSave={handleSave}
           onClose={closeForm}
+        />
+      )}
+
+      {todoFormOpen && (
+        <TodoDialog
+          key={editingTodo?.id ?? 'new'}
+          editing={editingTodo}
+          onSave={handleSaveTodo}
+          onClose={closeTodoForm}
         />
       )}
 
