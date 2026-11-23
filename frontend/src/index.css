@@ -14,7 +14,8 @@
                                  15. CSV import and export
                                  16. PDF report and printing
                                  17. Loading, refresh and pages
-                                 18. Tabs, bottom bar and add dialog   */
+                                 18. Tabs, bottom bar and add dialog
+                                 19. To-dos and the Today card         */
 
 /* 1. Tokens ------------------------------------------------------------ */
 
@@ -3560,8 +3561,8 @@ body,
     bottom: 0;
     left: 0;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 2px;
     min-height: var(--bottom-nav-h);
     padding: 6px max(8px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom))
       max(8px, env(safe-area-inset-left));
@@ -3573,7 +3574,7 @@ body,
     flex-direction: column;
     gap: 2px;
     min-height: 52px;
-    padding: 4px;
+    padding: 4px 2px;
     color: var(--muted);
     font-size: 12px;
   }
@@ -3620,5 +3621,376 @@ body,
 @media print {
   .bottom-nav {
     display: none !important;
+  }
+}
+
+/* 19. To-dos and the Today card ---------------------------------------------
+   components/TodosView.jsx (the To-dos tab), TodayCard.jsx (top of
+   Transactions) and the rows they share, TodoList.jsx. Overdue uses the
+   danger colour, always with words ("2 days overdue"). */
+
+/* Count of to-dos due: after the label in the header, on the icon's
+   corner in the phone's bottom bar. */
+.view-tab {
+  position: relative;
+}
+
+.view-tab-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--on-danger);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.bottom-nav .view-tab-badge {
+  position: absolute;
+  top: 4px;
+  left: calc(50% + 8px);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+/* Today card */
+.today-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.today-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--surface-hover);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+.today-stat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.today-stat-label .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.today-stat-value {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.today-stat-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+
+.today-stat.is-warning {
+  background: var(--warning-soft);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--warning-fill) 35%, transparent);
+}
+
+.today-stat.is-warning .today-stat-label {
+  font-weight: 600;
+  color: var(--warning);
+}
+
+.today-todos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.today-all {
+  align-self: flex-end;
+}
+
+@media (max-width: 575.98px) {
+  .today-stats {
+    gap: 8px;
+  }
+
+  .today-stat {
+    padding: 12px;
+  }
+
+  .today-stat-value {
+    font-size: 20px;
+  }
+}
+
+/* To-dos tab */
+.todo-quick {
+  display: flex;
+  gap: 8px;
+}
+
+.todo-quick .form-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.todo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.todo-section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.todo-section-title span {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.todo-section-title .is-overdue,
+.todo-section.is-overdue .todo-section-title {
+  color: var(--danger);
+}
+
+.todo-done-toggle {
+  align-self: flex-start;
+}
+
+/* Rows */
+.todo-list {
+  margin: 0 -12px;
+  padding: 0;
+  list-style: none;
+}
+
+.todo-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+}
+
+.todo-row + .todo-row {
+  border-top: 1px solid var(--hairline);
+}
+
+/* Round checkbox: a real checkbox (keyboard, screen readers) under a
+   drawn circle. 44px tap target around a 24px circle. */
+.todo-check {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px -8px -10px -10px;
+  cursor: pointer;
+}
+
+.todo-check input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.todo-check-box {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--subtle-strong);
+  border-radius: 999px;
+  color: transparent;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.todo-check-box .icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 3;
+}
+
+.todo-check:hover .todo-check-box {
+  border-color: var(--primary);
+}
+
+.todo-check input:checked + .todo-check-box {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.todo-check input:focus-visible + .todo-check-box {
+  box-shadow: var(--focus-ring-tight);
+}
+
+.todo-check input:disabled + .todo-check-box {
+  opacity: 0.5;
+}
+
+.todo-main {
+  min-width: 0;
+}
+
+.todo-title,
+.todo-meta {
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.todo-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.todo-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.todo-meta > span + span::before {
+  content: '·';
+  margin: 0 6px;
+  color: var(--muted);
+}
+
+.todo-meta .is-overdue {
+  font-weight: 500;
+  color: var(--danger);
+}
+
+.todo-repeat .icon {
+  width: 13px;
+  height: 13px;
+  margin-right: 3px;
+  vertical-align: -2px;
+}
+
+/* Fixed columns, so the buttons line up whether or not there's an amount. */
+.todo-row > .tx-actions {
+  grid-column: 4;
+}
+
+.todo-amount {
+  grid-column: 3;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.todo-row.is-done .todo-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.todo-row.is-done .todo-amount {
+  color: var(--muted);
+}
+
+/* "Save as an expense?" under a ticked payment. */
+.todo-ask {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  padding: 10px 6px 10px 14px;
+  border-radius: 14px;
+  background: var(--subtle);
+}
+
+.todo-ask p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.todo-ask-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 575.98px) {
+  .todo-list {
+    margin-inline: -8px;
+  }
+
+  .todo-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'check main amount'
+      'check main actions';
+    padding: 10px 8px;
+  }
+
+  .todo-check {
+    grid-area: check;
+  }
+
+  .todo-main {
+    grid-area: main;
+  }
+
+  .todo-amount {
+    grid-area: amount;
+    justify-self: end;
+  }
+
+  .todo-row > .tx-actions {
+    grid-area: actions;
+    justify-self: end;
+  }
+
+  .todo-ask {
+    grid-area: auto;
+    grid-column: 1 / -1;
   }
 }

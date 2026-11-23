@@ -54,7 +54,7 @@ def app():
 def _empty_tables(app):
     yield
     with app.app_context():
-        db.session.execute(text("TRUNCATE TABLE expenses, budgets RESTART IDENTITY"))
+        db.session.execute(text("TRUNCATE TABLE expenses, budgets, todos RESTART IDENTITY"))
         db.session.commit()
 
 

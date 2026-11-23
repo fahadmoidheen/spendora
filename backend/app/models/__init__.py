@@ -7,5 +7,6 @@ migration for tables it finds in that metadata.
 
 from app.models.budget import Budget
 from app.models.expense import Expense
+from app.models.todo import Todo
 
-__all__ = ["Budget", "Expense"]
+__all__ = ["Budget", "Expense", "Todo"]

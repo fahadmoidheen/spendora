@@ -63,7 +63,7 @@ and Flask accepts only tokens signed by your Auth0 tenant for this API
 each user only ever sees their own.
 
 Until the steps below are done, the app shows "Login isn't set up yet" and
-the API refuses `/api/expenses` and `/api/budgets` with a 503.
+the API refuses `/api/expenses`, `/api/budgets` and `/api/todos` with a 503.
 
 ### 1. Create the Auth0 tenant and API
 
@@ -367,9 +367,9 @@ Fine to skip while it's only you. Once others sign up:
 
 ## API
 
-All `/api/expenses` and `/api/budgets` calls need `Authorization: Bearer
-<access token>`; without a valid one they return **401**. `/` and
-`/api/health` stay public.
+All `/api/expenses`, `/api/budgets` and `/api/todos` calls need
+`Authorization: Bearer <access token>`; without a valid one they return **401**.
+`/` and `/api/health` stay public.
 
 | Method | Path | Result |
 |---|---|---|
@@ -383,6 +383,11 @@ All `/api/expenses` and `/api/budgets` calls need `Authorization: Bearer
 | POST | `/api/budgets` | create → 201, or 409 if that category already has one |
 | PUT | `/api/budgets/<id>` | replace category and limit |
 | DELETE | `/api/budgets/<id>` | delete → 204 |
+| GET | `/api/todos` | open to-dos by date (undated last), then the 50 most recent done |
+| POST | `/api/todos` | create → 201 |
+| PUT | `/api/todos/<id>` | replace all fields |
+| DELETE | `/api/todos/<id>` | delete → 204 |
+| POST | `/api/todos/<id>/complete` | mark done; 409 if already done |
 
 Entry body for POST/PUT:
 
@@ -402,6 +407,15 @@ stored as `"Income"`. The table and URL keep the name "expenses" for both.
 
 Budget body: `{"category": "Food", "monthly_limit": "450.00"}`. A budget is a limit for
 every calendar month; the app compares it with that month's expenses in the category.
+
+To-do body: `{"title": "Rent", "due_date": "2026-12-01", "amount": "15000", "category":
+"Housing", "repeat": "monthly", "done": false}`. Only `title` is required. With no
+`amount` the to-do is a plain task and `category` is ignored; with one, a blank category
+becomes `"Other"`. `repeat` is `none`, `daily`, `weekly` or `monthly` and needs a
+`due_date`. Complete body (optional): `{"date": "2026-11-22", "add_expense": true}` -
+`add_expense` also saves the amount as an expense dated `date`, in the same step, and a
+repeating to-do moves to its next date instead of closing. It answers
+`{"todo": ..., "expense": ... | null}`.
 
 Amounts come back as strings (`"84.35"`) so no precision is lost. Invalid input returns
 422 with a message per field: `{"error": "Validation failed.", "fields": {"amount": "..."}}`.
